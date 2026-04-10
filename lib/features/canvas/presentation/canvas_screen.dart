@@ -39,18 +39,22 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
     );
     setState(() => _imageSize = imgSize);
 
-    // 화면 렌더링 후 표시 크기 측정 및 OCR 실행
+    // 화면 렌더링 후 컨테이너 크기 측정 및 OCR 실행
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       final renderBox =
           _canvasKey.currentContext?.findRenderObject() as RenderBox?;
-      if (renderBox != null && _imageSize != null) {
-        final displaySize = renderBox.size;
-        ref.read(ocrProvider.notifier).runOcr(
-              imageFile: _imageFile,
-              imageSize: _imageSize!,
-              displaySize: displaySize,
-            );
+      if (renderBox == null) {
+        // 컨테이너 크기를 측정할 수 없는 경우 에러 상태로 전환
+        ref.read(ocrProvider.notifier).setError('캔버스 크기를 측정할 수 없습니다. 다시 시도해주세요.');
+        return;
       }
+      final containerSize = renderBox.size;
+      ref.read(ocrProvider.notifier).runOcr(
+            imageFile: _imageFile,
+            imageSize: _imageSize!,
+            containerSize: containerSize,
+          );
     });
   }
 
