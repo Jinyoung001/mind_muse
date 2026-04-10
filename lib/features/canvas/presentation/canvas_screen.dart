@@ -31,6 +31,7 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
   }
 
   void _onStrokeEnd() {
+    if (!mounted) return;
     final stroke = ref.read(canvasProvider.notifier).endStroke();
     if (stroke == null) return;
 
