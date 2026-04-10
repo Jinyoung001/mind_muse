@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/models/text_block_model.dart';
+import 'providers/canvas_provider.dart';
 import 'providers/ocr_provider.dart';
 import 'widgets/interactive_canvas.dart';
 
@@ -26,6 +27,12 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
     super.initState();
     _imageFile = File(widget.imagePath);
     _loadImageAndRunOcr();
+  }
+
+  void _onStrokeEnd() {
+    // Task 8(IntersectionService)에서 실제 충돌 계산으로 교체될 예정
+    // 현재는 드로잉 완료만 처리
+    ref.read(canvasProvider.notifier).endStroke();
   }
 
   Future<void> _loadImageAndRunOcr() async {
@@ -73,6 +80,12 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
             tooltip: 'OCR 디버그 표시',
             onPressed: () => setState(() => _showDebug = !_showDebug),
           ),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: '드로잉 초기화',
+            onPressed: () =>
+                ref.read(canvasProvider.notifier).clearStrokes(),
+          ),
         ],
       ),
       body: Column(
@@ -94,11 +107,23 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
 
           // 메인 캔버스
           Expanded(
-            child: InteractiveCanvas(
-              key: _canvasKey,
-              imageFile: _imageFile,
-              textBlocks: textBlocks,
-              showDebug: _showDebug,
+            child: Consumer(
+              builder: (context, ref, _) {
+                final canvasState = ref.watch(canvasProvider);
+                return InteractiveCanvas(
+                  key: _canvasKey,
+                  imageFile: _imageFile,
+                  textBlocks: textBlocks,
+                  strokes: canvasState.strokes,
+                  currentPoints: canvasState.currentPoints,
+                  showDebug: _showDebug,
+                  onPanStart: (pos) =>
+                      ref.read(canvasProvider.notifier).startStroke(pos),
+                  onPanUpdate: (pos) =>
+                      ref.read(canvasProvider.notifier).addPoint(pos),
+                  onPanEnd: _onStrokeEnd,
+                );
+              },
             ),
           ),
         ],
