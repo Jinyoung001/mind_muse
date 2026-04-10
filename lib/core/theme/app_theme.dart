@@ -1,0 +1,12 @@
+import 'package:flutter/material.dart';
+
+class AppTheme {
+  static ThemeData get light => ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF4A90D9),
+          brightness: Brightness.light,
+        ),
+        useMaterial3: true,
+        fontFamily: 'Roboto',
+      );
+}
