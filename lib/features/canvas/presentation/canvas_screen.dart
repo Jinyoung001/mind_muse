@@ -5,6 +5,7 @@ import '../data/models/text_block_model.dart';
 import 'providers/canvas_provider.dart';
 import 'providers/ocr_provider.dart';
 import 'widgets/interactive_canvas.dart';
+import '../domain/services/intersection_service.dart';
 
 class CanvasScreen extends ConsumerStatefulWidget {
   final String imagePath;
@@ -30,9 +31,25 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
   }
 
   void _onStrokeEnd() {
-    // Task 8(IntersectionService)에서 실제 충돌 계산으로 교체될 예정
-    // 현재는 드로잉 완료만 처리
-    ref.read(canvasProvider.notifier).endStroke();
+    final stroke = ref.read(canvasProvider.notifier).endStroke();
+    if (stroke == null) return;
+
+    final textBlocks = ref.read(ocrProvider).blocks.valueOrNull ?? [];
+    final hits = IntersectionService.findHits(
+      stroke: stroke,
+      textBlocks: textBlocks,
+    );
+
+    if (hits.isNotEmpty) {
+      // Phase 4에서 Gemma API 호출로 교체
+      // 현재는 스낵바로 결과 확인
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('선택된 텍스트: ${hits.join(' / ')}'),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
   }
 
   Future<void> _loadImageAndRunOcr() async {
