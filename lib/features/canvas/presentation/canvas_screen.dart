@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/models/text_block_model.dart';
 import 'providers/canvas_provider.dart';
 import 'providers/ocr_provider.dart';
+import 'providers/gemma_provider.dart';
 import 'widgets/interactive_canvas.dart';
+import 'widgets/speech_bubble_widget.dart';
 import '../domain/services/intersection_service.dart';
 
 class CanvasScreen extends ConsumerStatefulWidget {
@@ -42,14 +44,10 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
     );
 
     if (hits.isNotEmpty) {
-      // Phase 4에서 Gemma API 호출로 교체
-      // 현재는 스낵바로 결과 확인
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('선택된 텍스트: ${hits.join(' / ')}'),
-          duration: const Duration(seconds: 3),
-        ),
-      );
+      ref.read(gemmaProvider.notifier).ask(
+            selectedTexts: hits,
+            position: stroke.center,
+          );
     }
   }
 
@@ -106,43 +104,98 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
           ),
         ],
       ),
-      body: Column(
+      body: Stack(
         children: [
-          // OCR 상태 표시 배너
-          ocrState.blocks.when(
-            loading: () => const LinearProgressIndicator(),
-            error: (e, _) => Container(
-              color: Colors.red.shade100,
-              padding: const EdgeInsets.all(8),
-              child: Text('OCR 오류: $e'),
-            ),
-            data: (blocks) => Container(
-              color: Colors.green.shade50,
-              padding: const EdgeInsets.all(8),
-              child: Text('텍스트 블록 ${blocks.length}개 인식됨'),
-            ),
+          Column(
+            children: [
+              // OCR 상태 표시 배너
+              ocrState.blocks.when(
+                loading: () => const LinearProgressIndicator(),
+                error: (e, _) => Container(
+                  color: Colors.red.shade100,
+                  padding: const EdgeInsets.all(8),
+                  child: Text('OCR 오류: $e'),
+                ),
+                data: (blocks) => Container(
+                  color: Colors.green.shade50,
+                  padding: const EdgeInsets.all(8),
+                  child: Text('텍스트 블록 ${blocks.length}개 인식됨'),
+                ),
+              ),
+
+              // 메인 캔버스
+              Expanded(
+                child: Consumer(
+                  builder: (context, ref, _) {
+                    final canvasState = ref.watch(canvasProvider);
+                    return InteractiveCanvas(
+                      key: _canvasKey,
+                      imageFile: _imageFile,
+                      textBlocks: textBlocks,
+                      strokes: canvasState.strokes,
+                      currentPoints: canvasState.currentPoints,
+                      showDebug: _showDebug,
+                      onPanStart: (pos) =>
+                          ref.read(canvasProvider.notifier).startStroke(pos),
+                      onPanUpdate: (pos) =>
+                          ref.read(canvasProvider.notifier).addPoint(pos),
+                      onPanEnd: _onStrokeEnd,
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
 
-          // 메인 캔버스
-          Expanded(
-            child: Consumer(
-              builder: (context, ref, _) {
-                final canvasState = ref.watch(canvasProvider);
-                return InteractiveCanvas(
-                  key: _canvasKey,
-                  imageFile: _imageFile,
-                  textBlocks: textBlocks,
-                  strokes: canvasState.strokes,
-                  currentPoints: canvasState.currentPoints,
-                  showDebug: _showDebug,
-                  onPanStart: (pos) =>
-                      ref.read(canvasProvider.notifier).startStroke(pos),
-                  onPanUpdate: (pos) =>
-                      ref.read(canvasProvider.notifier).addPoint(pos),
-                  onPanEnd: _onStrokeEnd,
-                );
-              },
-            ),
+          // 말풍선 오버레이
+          Consumer(
+            builder: (context, ref, _) {
+              final gemmaState = ref.watch(gemmaProvider);
+              return gemmaState.bubble.when(
+                loading: () => Positioned(
+                  bottom: 20,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.1),
+                              blurRadius: 8)
+                        ],
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                          SizedBox(width: 10),
+                          Text('생각 중...'),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                error: (e, _) => const SizedBox.shrink(),
+                data: (bubble) {
+                  if (bubble == null) return const SizedBox.shrink();
+                  return SpeechBubbleWidget(
+                    message: bubble.message,
+                    targetPosition: bubble.position,
+                    onDismiss: () =>
+                        ref.read(gemmaProvider.notifier).dismiss(),
+                  );
+                },
+              );
+            },
           ),
         ],
       ),
