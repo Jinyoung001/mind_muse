@@ -44,5 +44,5 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# .env 파일은 플레이스홀더 값으로 커밋됨 (실제 API 키는 로컬에서만 변경)
-# .env
+# API 키 보안: .env는 git에 포함하지 않음
+.env
