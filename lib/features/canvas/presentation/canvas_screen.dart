@@ -184,7 +184,20 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
                     ),
                   ),
                 ),
-                error: (e, _) => const SizedBox.shrink(),
+                error: (e, _) {
+                  // 에러 발생 시 자동으로 dismiss하고 토스트 표시
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (!mounted) return;
+                    ref.read(gemmaProvider.notifier).dismiss();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('AI 응답을 가져오지 못했습니다. 다시 시도해주세요.'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  });
+                  return const SizedBox.shrink();
+                },
                 data: (bubble) {
                   if (bubble == null) return const SizedBox.shrink();
                   return SpeechBubbleWidget(

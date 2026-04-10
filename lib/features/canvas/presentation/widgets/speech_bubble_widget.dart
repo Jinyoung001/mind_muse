@@ -57,14 +57,14 @@ class _SpeechBubbleWidgetState extends State<SpeechBubbleWidget>
     double left = widget.targetPosition.dx - bubbleWidth / 2;
     double top = widget.targetPosition.dy - bubbleHeight - 20;
 
-    // 왼쪽/오른쪽 경계 보정
-    if (left < 8) left = 8;
-    if (left + bubbleWidth > screenSize.width - 8) {
-      left = screenSize.width - bubbleWidth - 8;
-    }
+    // 왼쪽/오른쪽 경계 보정 (화면이 매우 좁은 경우 음수 방지)
+    left = left.clamp(8.0, (screenSize.width - bubbleWidth - 8).clamp(8.0, double.infinity));
 
-    // 위쪽 경계 보정 — 공간 없으면 아래에 표시
+    // 위쪽 경계 보정 — 공간 없으면 아래에 표시, 하단 경계도 보정
     if (top < 60) top = widget.targetPosition.dy + 20;
+    if (top + bubbleHeight > screenSize.height - 8) {
+      top = screenSize.height - bubbleHeight - 8;
+    }
 
     return Positioned(
       left: left,
