@@ -33,29 +33,8 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
 
   Future<void> _onStrokeEnd() async {
     if (!mounted) return;
-
-    // 획 완료 처리
-    final stroke = ref.read(canvasProvider.notifier).endStroke();
-    if (stroke == null) return;
-
-    // 컨테이너 크기 측정
-    final renderBox =
-        _canvasKey.currentContext?.findRenderObject() as RenderBox?;
-    if (renderBox == null) return;
-    final containerSize = renderBox.size;
-
-    // 이미지 + 드로잉 합성
-    final strokes = ref.read(canvasProvider).strokes;
-    final imageBytes = await _compositeService.composite(
-      imageFile: _imageFile,
-      strokes: strokes,
-      containerSize: containerSize,
-    );
-
-    // Gemma에 전달 (드로잉 있음)
-    if (mounted) {
-      await ref.read(gemmaProvider.notifier).startConversation(imageBytes);
-    }
+    // 획 저장만 — 질문은 "질문하기" 버튼에서 시작
+    ref.read(canvasProvider.notifier).endStroke();
   }
 
   /// 드로잉 없이 전체 이미지를 AI에게 질문
@@ -109,15 +88,17 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
               ref.read(gemmaProvider.notifier).dismiss();
             },
           ),
-          // AI 질문 (드로잉 없이도 가능)
-          if (!gemmaState.isLoading)
-            IconButton(
-              icon: const Icon(Icons.psychology_outlined),
-              tooltip: 'AI에게 질문',
-              onPressed: _onAskAI,
-            ),
         ],
       ),
+      floatingActionButton: (!gemmaState.isActive && !gemmaState.isLoading)
+          ? FloatingActionButton.extended(
+              onPressed: _onAskAI,
+              icon: const Icon(Icons.psychology_outlined),
+              label: const Text('질문하기'),
+              backgroundColor: const Color(0xFF4A90D9),
+              foregroundColor: Colors.white,
+            )
+          : null,
       body: Column(
         children: [
           // 메인 캔버스
