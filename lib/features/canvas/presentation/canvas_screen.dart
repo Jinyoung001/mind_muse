@@ -6,6 +6,7 @@ import 'providers/canvas_provider.dart';
 import 'providers/gemma_provider.dart';
 import 'widgets/interactive_canvas.dart';
 import 'widgets/conversation_panel.dart';
+import 'widgets/absurdity_fullscreen_page.dart';
 
 class CanvasScreen extends ConsumerStatefulWidget {
   final String imagePath;
@@ -86,6 +87,21 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
             content: Text(next.error!),
             backgroundColor: Colors.red.shade700,
             duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    });
+
+    // absurdityHtml이 세팅되면 전체화면으로 전환
+    ref.listen(gemmaProvider, (prev, next) {
+      if (next.absurdityHtml != null && prev?.absurdityHtml == null) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => AbsurdityFullscreenPage(
+              html: next.absurdityHtml!,
+              onStudentDoubt: () =>
+                  ref.read(gemmaProvider.notifier).onStudentDoubt(),
+            ),
           ),
         );
       }

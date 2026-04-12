@@ -103,8 +103,7 @@ class _ConversationPanelState extends ConsumerState<ConversationPanel> {
           // 대화 히스토리
           ConstrainedBox(
             constraints: BoxConstraints(
-              maxHeight: (state.isGeneratingAbsurdity ||
-                      state.absurdityHtml != null)
+              maxHeight: state.isGeneratingAbsurdity
                   ? (MediaQuery.of(context).size.height -
                           MediaQuery.of(context).viewInsets.bottom) *
                       0.65
@@ -145,12 +144,6 @@ class _ConversationPanelState extends ConsumerState<ConversationPanel> {
                       const AbsurdityLoadingCard(),
                     ],
 
-                    // 마지막 턴: Absurdity WebView 버블
-                    if (isLastTurn && state.absurdityHtml != null) ...[
-                      const SizedBox(height: 8),
-                      AbsurdityWebviewBubble(html: state.absurdityHtml!),
-                    ],
-
                     const SizedBox(height: 12),
                   ],
                 );
@@ -186,11 +179,10 @@ class _ConversationPanelState extends ConsumerState<ConversationPanel> {
               ),
             ),
 
-          // 입력 영역 (완료·로딩·Absurdity 표시 중에는 숨김)
+          // 입력 영역 (완료·로딩·Absurdity 생성 중에는 숨김)
           if (!state.isFinished &&
               !state.isLoading &&
               !state.isGeneratingAbsurdity &&
-              state.absurdityHtml == null &&
               state.turns.isNotEmpty)
             _InputArea(
               controller: _controller,
