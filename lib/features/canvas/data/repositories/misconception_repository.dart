@@ -24,6 +24,7 @@ class MisconceptionRepository {
         '"false_assumption": "one sentence describing the wrong belief", '
         '"absurd_extreme": "one sentence describing what happens if we take this to extreme", '
         '"trigger_phrase": "short phrase the AI will say to agree and trigger the simulation"}\n'
+        'IMPORTANT: All string values in the JSON (false_assumption, absurd_extreme, trigger_phrase) MUST be written in Korean.\n'
         'If has_misconception is false, return: {"has_misconception": false}',
       ),
     );
