@@ -40,11 +40,16 @@ class MisconceptionResult {
     }
   }
 
+  static final _jsonBlockRegex =
+      RegExp(r'```(?:json)?\s*([\s\S]*?)\s*```');
+
   static String _extractJson(String raw) {
     // ```json ... ``` 또는 ``` ... ``` 마크다운 블록 제거
-    final blockMatch =
-        RegExp(r'```(?:json)?\s*([\s\S]*?)\s*```').firstMatch(raw);
-    if (blockMatch != null) return blockMatch.group(1)!;
+    final blockMatch = _jsonBlockRegex.firstMatch(raw);
+    if (blockMatch != null) {
+      final group = blockMatch.group(1);
+      if (group != null) return group;
+    }
 
     // { ... } 직접 추출
     final start = raw.indexOf('{');
