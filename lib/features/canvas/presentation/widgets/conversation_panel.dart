@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/gemma_provider.dart';
+import 'absurdity_webview_bubble.dart';
 
 /// 화면 하단에 고정되는 소크라테스 대화 패널.
 /// 대화 히스토리 + 답변 입력 + 힌트 버튼을 포함한다.
@@ -102,7 +103,14 @@ class _ConversationPanelState extends ConsumerState<ConversationPanel> {
           // 대화 히스토리
           ConstrainedBox(
             constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.35,
+              maxHeight: (state.isGeneratingAbsurdity ||
+                      state.absurdityHtml != null)
+                  ? (MediaQuery.of(context).size.height -
+                          MediaQuery.of(context).viewInsets.bottom) *
+                      0.65
+                  : (MediaQuery.of(context).size.height -
+                          MediaQuery.of(context).viewInsets.bottom) *
+                      0.25,
             ),
             child: ListView.builder(
               controller: _scrollController,
@@ -111,6 +119,7 @@ class _ConversationPanelState extends ConsumerState<ConversationPanel> {
               itemCount: state.turns.length,
               itemBuilder: (context, index) {
                 final turn = state.turns[index];
+                final isLastTurn = index == state.turns.length - 1;
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -129,6 +138,19 @@ class _ConversationPanelState extends ConsumerState<ConversationPanel> {
                       const SizedBox(height: 6),
                       _UserMessage(message: turn.userAnswer!),
                     ],
+
+                    // 마지막 턴: Absurdity Engine 로딩 카드
+                    if (isLastTurn && state.isGeneratingAbsurdity) ...[
+                      const SizedBox(height: 8),
+                      const AbsurdityLoadingCard(),
+                    ],
+
+                    // 마지막 턴: Absurdity WebView 버블
+                    if (isLastTurn && state.absurdityHtml != null) ...[
+                      const SizedBox(height: 8),
+                      AbsurdityWebviewBubble(html: state.absurdityHtml!),
+                    ],
+
                     const SizedBox(height: 12),
                   ],
                 );
@@ -164,8 +186,12 @@ class _ConversationPanelState extends ConsumerState<ConversationPanel> {
               ),
             ),
 
-          // 입력 영역 (완료되지 않은 경우에만)
-          if (!state.isFinished && !state.isLoading && state.turns.isNotEmpty)
+          // 입력 영역 (완료·로딩·Absurdity 표시 중에는 숨김)
+          if (!state.isFinished &&
+              !state.isLoading &&
+              !state.isGeneratingAbsurdity &&
+              state.absurdityHtml == null &&
+              state.turns.isNotEmpty)
             _InputArea(
               controller: _controller,
               canHint: () {
@@ -195,9 +221,6 @@ class _ConversationPanelState extends ConsumerState<ConversationPanel> {
                 ),
               ),
             ),
-
-          // 키보드 패딩
-          SizedBox(height: MediaQuery.of(context).viewInsets.bottom),
         ],
       ),
     );
