@@ -43,26 +43,54 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
 
     final renderBox =
         _canvasKey.currentContext?.findRenderObject() as RenderBox?;
-    if (renderBox == null) return;
+    if (renderBox == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('캔버스를 찾을 수 없습니다. 잠시 후 다시 시도하세요.')),
+        );
+      }
+      return;
+    }
     final containerSize = renderBox.size;
 
-    final strokes = ref.read(canvasProvider).strokes;
-    final imageBytes = await _compositeService.composite(
-      imageFile: _imageFile,
-      strokes: strokes,
-      containerSize: containerSize,
-    );
+    try {
+      final strokes = ref.read(canvasProvider).strokes;
+      final imageBytes = await _compositeService.composite(
+        imageFile: _imageFile,
+        strokes: strokes,
+        containerSize: containerSize,
+      );
 
-    if (mounted) {
-      await ref.read(gemmaProvider.notifier).startConversation(
-            imageBytes,
-            hasDrawing: strokes.isNotEmpty,
-          );
+      if (mounted) {
+        await ref.read(gemmaProvider.notifier).startConversation(
+              imageBytes,
+              hasDrawing: strokes.isNotEmpty,
+            );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('오류 발생: $e')),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // API 에러 발생 시 SnackBar로 표시
+    ref.listen(gemmaProvider, (prev, next) {
+      if (next.error != null && next.error != prev?.error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(next.error!),
+            backgroundColor: Colors.red.shade700,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    });
+
     final gemmaState = ref.watch(gemmaProvider);
     final canvasState = ref.watch(canvasProvider);
     final hasStrokes = canvasState.strokes.isNotEmpty;
