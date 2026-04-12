@@ -55,6 +55,14 @@ class CanvasNotifier extends StateNotifier<CanvasState> {
     return stroke;
   }
 
+  /// 마지막 획 되돌리기
+  void undoLastStroke() {
+    if (state.strokes.isEmpty) return;
+    final newStrokes = List<DrawnStrokeModel>.from(state.strokes);
+    newStrokes.removeLast();
+    state = state.copyWith(strokes: newStrokes, currentPoints: []);
+  }
+
   /// 모든 획 초기화
   void clearStrokes() {
     state = const CanvasState();
