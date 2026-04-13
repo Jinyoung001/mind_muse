@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/alien_provider.dart';
 import '../../../../core/theme/app_theme.dart';
+import 'alien_character.dart';
 
 /// 화면 하단에 고정되는 외계인 대화 패널.
 /// 대화 히스토리 + 답변 입력 포함.
@@ -79,11 +80,10 @@ class _ConversationPanelState extends ConsumerState<ConversationPanel> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               children: [
-                const Icon(Icons.rocket_launch, 
-                    color: AppTheme.neonGreen, size: 20),
+                const AlienCharacter(size: 40),
                 const SizedBox(width: 8),
                 const Text(
-                  '외계인 통신관',
+                  '외계인 조사관',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: AppTheme.neonGreen,
@@ -199,12 +199,12 @@ class _AiMessage extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          padding: const EdgeInsets.all(4),
+          padding: const EdgeInsets.all(2),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(color: AppTheme.neonGreen, width: 1),
           ),
-          child: const Text('👽', style: TextStyle(fontSize: 16)),
+          child: const AlienCharacter(size: 32),
         ),
         const SizedBox(width: 10),
         Expanded(
