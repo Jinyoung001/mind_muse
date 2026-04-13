@@ -1,11 +1,13 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:aurora_background/aurora_background.dart';
 import '../domain/services/image_composite_service.dart';
 import 'providers/canvas_provider.dart';
 import 'providers/alien_provider.dart';
 import 'widgets/interactive_canvas.dart';
 import 'widgets/conversation_panel.dart';
+import '../../../core/theme/app_theme.dart';
 
 class CanvasScreen extends ConsumerStatefulWidget {
   final String imagePath;
@@ -97,11 +99,11 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('MindMuse'),
+        title: const Text('MIND MUSE'),
         actions: [
           // 되돌리기
           IconButton(
-            icon: const Icon(Icons.undo),
+            icon: const Icon(Icons.undo, color: AppTheme.neonGreen),
             tooltip: '되돌리기',
             onPressed: hasStrokes
                 ? () => ref.read(canvasProvider.notifier).undoLastStroke()
@@ -109,7 +111,7 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
           ),
           // 전체 초기화
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh, color: AppTheme.neonGreen),
             tooltip: '드로잉 초기화',
             onPressed: () {
               ref.read(canvasProvider.notifier).clearStrokes();
@@ -121,37 +123,39 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
       floatingActionButton: (!alienState.isActive && !alienState.isLoading)
           ? FloatingActionButton.extended(
               onPressed: _onAskAI,
-              icon: const Icon(Icons.psychology_outlined),
-              label: const Text('질문하기'),
-              backgroundColor: const Color(0xFF4A90D9),
-              foregroundColor: Colors.white,
+              icon: const Icon(Icons.rocket_launch),
+              label: const Text('탐사 질문하기'),
+              backgroundColor: AppTheme.neonGreen,
+              foregroundColor: AppTheme.spaceBlack,
             )
           : null,
-      body: Column(
-        children: [
-          // 메인 캔버스
-          Expanded(
-            child: Consumer(
-              builder: (context, ref, _) {
-                final canvasState = ref.watch(canvasProvider);
-                return InteractiveCanvas(
-                  key: _canvasKey,
-                  imageFile: _imageFile,
-                  strokes: canvasState.strokes,
-                  currentPoints: canvasState.currentPoints,
-                  onPanStart: (pos) =>
-                      ref.read(canvasProvider.notifier).startStroke(pos),
-                  onPanUpdate: (pos) =>
-                      ref.read(canvasProvider.notifier).addPoint(pos),
-                  onPanEnd: _onStrokeEnd,
-                );
-              },
+      body: AuroraBackground(
+        child: Column(
+          children: [
+            // 메인 캔버스
+            Expanded(
+              child: Consumer(
+                builder: (context, ref, _) {
+                  final canvasState = ref.watch(canvasProvider);
+                  return InteractiveCanvas(
+                    key: _canvasKey,
+                    imageFile: _imageFile,
+                    strokes: canvasState.strokes,
+                    currentPoints: canvasState.currentPoints,
+                    onPanStart: (pos) =>
+                        ref.read(canvasProvider.notifier).startStroke(pos),
+                    onPanUpdate: (pos) =>
+                        ref.read(canvasProvider.notifier).addPoint(pos),
+                    onPanEnd: _onStrokeEnd,
+                  );
+                },
+              ),
             ),
-          ),
 
-          // 대화 패널 (활성 상태일 때만 표시)
-          if (alienState.isActive) const ConversationPanel(),
-        ],
+            // 대화 패널 (활성 상태일 때만 표시)
+            if (alienState.isActive) const ConversationPanel(),
+          ],
+        ),
       ),
     );
   }
