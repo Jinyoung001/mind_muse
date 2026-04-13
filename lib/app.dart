@@ -9,7 +9,7 @@ class MindMuseApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'MindMuse',
-      theme: AppTheme.light,
+      theme: AppTheme.dark,
       home: const HomeScreen(),
       debugShowCheckedModeBanner: false,
     );
