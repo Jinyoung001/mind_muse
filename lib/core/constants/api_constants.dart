@@ -9,5 +9,13 @@ class ApiConstants {
     return key ?? '';
   }
 
+  static String get backendBaseUrl {
+    final url = dotenv.env['BACKEND_BASE_URL'];
+    assert(url != null && url.isNotEmpty, 'BACKEND_BASE_URL이 .env에 설정되지 않았습니다');
+    return url ?? 'http://10.0.2.2:8000';
+  }
+
+  static const String alienChatEndpoint = '/api/alien/chat';
+
   static const String gemmaModel = 'gemma-4-26b-a4b-it';
 }
