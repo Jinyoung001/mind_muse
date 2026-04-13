@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:aurora_background/aurora_background.dart';
 import 'widgets/image_source_sheet.dart';
 import '../../canvas/presentation/canvas_screen.dart';
+import '../../../core/theme/app_theme.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -9,6 +11,7 @@ class HomeScreen extends StatelessWidget {
   void _showImageSourceSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.transparent,
       builder: (context) => ImageSourceSheet(
         onImageSelected: (XFile image) {
           Navigator.push(
@@ -25,40 +28,64 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.menu_book, size: 80, color: Color(0xFF4A90D9)),
-            const SizedBox(height: 24),
-            const Text(
-              'MindMuse',
-              style: TextStyle(
-                fontSize: 36,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF2C3E50),
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              '교과서를 찍고, 궁금한 곳에 표시해보세요',
-              style: TextStyle(fontSize: 16, color: Color(0xFF7F8C8D)),
-            ),
-            const SizedBox(height: 48),
-            ElevatedButton.icon(
-              onPressed: () => _showImageSourceSheet(context),
-              icon: const Icon(Icons.add_photo_alternate),
-              label: const Text('시작하기'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 40,
-                  vertical: 16,
+      body: AuroraBackground(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: AppTheme.neonGlow,
                 ),
-                textStyle: const TextStyle(fontSize: 18),
+                child: const Icon(
+                  Icons.explore,
+                  size: 100,
+                  color: AppTheme.neonGreen,
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 32),
+              Text(
+                'MIND MUSE',
+                style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                      color: AppTheme.neonGreen,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 8,
+                    ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                '우주 너머의 지식을 탐험하세요',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: Colors.white70,
+                      letterSpacing: 2,
+                    ),
+              ),
+              const SizedBox(height: 80),
+              ElevatedButton.icon(
+                onPressed: () => _showImageSourceSheet(context),
+                icon: const Icon(Icons.rocket_launch),
+                label: const Text('탐사 시작'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.neonGreen,
+                  foregroundColor: AppTheme.spaceBlack,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 48,
+                    vertical: 20,
+                  ),
+                  textStyle: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                ).copyWith(
+                  elevation: MaterialStateProperty.all(10),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
