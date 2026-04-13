@@ -3,10 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/services/image_composite_service.dart';
 import 'providers/canvas_provider.dart';
-import 'providers/gemma_provider.dart';
+import 'providers/alien_provider.dart';
 import 'widgets/interactive_canvas.dart';
 import 'widgets/conversation_panel.dart';
-import 'widgets/absurdity_fullscreen_page.dart';
 
 class CanvasScreen extends ConsumerStatefulWidget {
   final String imagePath;
@@ -28,7 +27,7 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
     // 새 이미지로 진입할 때 이전 드로잉/대화 상태 초기화
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(canvasProvider.notifier).clearStrokes();
-      ref.read(gemmaProvider.notifier).dismiss();
+      ref.read(alienProvider.notifier).dismiss();
     });
   }
 
@@ -63,7 +62,7 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
       );
 
       if (mounted) {
-        await ref.read(gemmaProvider.notifier).startConversation(
+        await ref.read(alienProvider.notifier).startConversation(
               imageBytes,
               hasDrawing: strokes.isNotEmpty,
             );
@@ -80,7 +79,7 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
   @override
   Widget build(BuildContext context) {
     // API 에러 발생 시 SnackBar로 표시
-    ref.listen(gemmaProvider, (prev, next) {
+    ref.listen(alienProvider, (prev, next) {
       if (next.error != null && next.error != prev?.error) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -92,22 +91,7 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
       }
     });
 
-    // absurdityHtml이 세팅되면 전체화면으로 전환
-    ref.listen(gemmaProvider, (prev, next) {
-      if (next.absurdityHtml != null && prev?.absurdityHtml == null) {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => AbsurdityFullscreenPage(
-              html: next.absurdityHtml!,
-              onStudentDoubt: () =>
-                  ref.read(gemmaProvider.notifier).onStudentDoubt(),
-            ),
-          ),
-        );
-      }
-    });
-
-    final gemmaState = ref.watch(gemmaProvider);
+    final alienState = ref.watch(alienProvider);
     final canvasState = ref.watch(canvasProvider);
     final hasStrokes = canvasState.strokes.isNotEmpty;
 
@@ -129,12 +113,12 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
             tooltip: '드로잉 초기화',
             onPressed: () {
               ref.read(canvasProvider.notifier).clearStrokes();
-              ref.read(gemmaProvider.notifier).dismiss();
+              ref.read(alienProvider.notifier).dismiss();
             },
           ),
         ],
       ),
-      floatingActionButton: (!gemmaState.isActive && !gemmaState.isLoading)
+      floatingActionButton: (!alienState.isActive && !alienState.isLoading)
           ? FloatingActionButton.extended(
               onPressed: _onAskAI,
               icon: const Icon(Icons.psychology_outlined),
@@ -166,7 +150,7 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
           ),
 
           // 대화 패널 (활성 상태일 때만 표시)
-          if (gemmaState.isActive) const ConversationPanel(),
+          if (alienState.isActive) const ConversationPanel(),
         ],
       ),
     );

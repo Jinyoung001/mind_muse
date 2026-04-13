@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/gemma_provider.dart';
-import 'absurdity_webview_bubble.dart';
+import '../providers/alien_provider.dart';
 
-/// 화면 하단에 고정되는 소크라테스 대화 패널.
-/// 대화 히스토리 + 답변 입력 + 힌트 버튼을 포함한다.
+/// 화면 하단에 고정되는 외계인 대화 패널.
+/// 대화 히스토리 + 답변 입력 포함.
 class ConversationPanel extends ConsumerStatefulWidget {
   const ConversationPanel({super.key});
 
@@ -37,10 +36,10 @@ class _ConversationPanelState extends ConsumerState<ConversationPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(gemmaProvider);
+    final state = ref.watch(alienProvider);
 
     // 새 메시지가 추가되면 스크롤 아래로
-    ref.listen(gemmaProvider, (_, __) => _scrollToBottom());
+    ref.listen(alienProvider, (_, __) => _scrollToBottom());
 
     return Container(
       decoration: BoxDecoration(
@@ -75,11 +74,11 @@ class _ConversationPanelState extends ConsumerState<ConversationPanel> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: Row(
               children: [
-                const Icon(Icons.lightbulb_outline,
+                const Icon(Icons.adb, // 외계인 느낌의 아이콘
                     color: Color(0xFF4A90D9), size: 18),
                 const SizedBox(width: 6),
                 const Text(
-                  'MindMuse 튜터',
+                  '외계인 조사관',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF4A90D9),
@@ -90,7 +89,7 @@ class _ConversationPanelState extends ConsumerState<ConversationPanel> {
                 if (!state.isLoading)
                   TextButton(
                     onPressed: () {
-                      ref.read(gemmaProvider.notifier).dismiss();
+                      ref.read(alienProvider.notifier).dismiss();
                     },
                     child: const Text('닫기',
                         style: TextStyle(color: Colors.grey, fontSize: 12)),
@@ -103,13 +102,9 @@ class _ConversationPanelState extends ConsumerState<ConversationPanel> {
           // 대화 히스토리
           ConstrainedBox(
             constraints: BoxConstraints(
-              maxHeight: state.isGeneratingAbsurdity
-                  ? (MediaQuery.of(context).size.height -
+              maxHeight: (MediaQuery.of(context).size.height -
                           MediaQuery.of(context).viewInsets.bottom) *
-                      0.65
-                  : (MediaQuery.of(context).size.height -
-                          MediaQuery.of(context).viewInsets.bottom) *
-                      0.25,
+                      0.35,
             ),
             child: ListView.builder(
               controller: _scrollController,
@@ -118,30 +113,16 @@ class _ConversationPanelState extends ConsumerState<ConversationPanel> {
               itemCount: state.turns.length,
               itemBuilder: (context, index) {
                 final turn = state.turns[index];
-                final isLastTurn = index == state.turns.length - 1;
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // AI 질문
-                    _AiMessage(message: turn.aiQuestion),
-                    const SizedBox(height: 6),
-
-                    // 공개된 힌트
-                    for (int h = 0; h < turn.revealedHints; h++)
-                      if (h < turn.hints.length)
-                        _HintMessage(
-                            hint: '힌트 ${h + 1}: ${turn.hints[h]}'),
-
-                    // 사용자 답변
+                    // AI 질문 (외계인 메시지)
+                    if (turn.aiQuestion.isNotEmpty || state.isLoading && index == state.turns.length - 1)
+                      _AiMessage(message: turn.aiQuestion),
+                    
                     if (turn.userAnswer != null) ...[
                       const SizedBox(height: 6),
                       _UserMessage(message: turn.userAnswer!),
-                    ],
-
-                    // 마지막 턴: Absurdity Engine 로딩 카드
-                    if (isLastTurn && state.isGeneratingAbsurdity) ...[
-                      const SizedBox(height: 8),
-                      const AbsurdityLoadingCard(),
                     ],
 
                     const SizedBox(height: 12),
@@ -164,7 +145,7 @@ class _ConversationPanelState extends ConsumerState<ConversationPanel> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   ),
                   SizedBox(width: 8),
-                  Text('생각 중...', style: TextStyle(color: Colors.grey)),
+                  Text('분석 중...', style: TextStyle(color: Colors.grey)),
                 ],
               ),
             ),
@@ -179,39 +160,15 @@ class _ConversationPanelState extends ConsumerState<ConversationPanel> {
               ),
             ),
 
-          // 입력 영역 (완료·로딩·Absurdity 생성 중에는 숨김)
-          if (!state.isFinished &&
-              !state.isLoading &&
-              !state.isGeneratingAbsurdity &&
-              state.turns.isNotEmpty)
+          // 입력 영역
+          if (!state.isLoading && state.turns.isNotEmpty)
             _InputArea(
               controller: _controller,
-              canHint: () {
-                final turn = state.currentTurn;
-                if (turn == null) return false;
-                return turn.revealedHints < turn.hints.length;
-              },
-              onHint: () => ref.read(gemmaProvider.notifier).revealNextHint(),
               onSubmit: (answer) {
                 if (answer.trim().isEmpty) return;
                 _controller.clear();
-                ref.read(gemmaProvider.notifier).submitAnswer(answer.trim());
+                ref.read(alienProvider.notifier).submitAnswer(answer.trim());
               },
-            ),
-
-          // 완료 메시지
-          if (state.isFinished)
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: ElevatedButton.icon(
-                onPressed: () => ref.read(gemmaProvider.notifier).dismiss(),
-                icon: const Icon(Icons.check_circle_outline),
-                label: const Text('학습 완료!'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF4A90D9),
-                  foregroundColor: Colors.white,
-                ),
-              ),
             ),
         ],
       ),
@@ -231,7 +188,7 @@ class _AiMessage extends StatelessWidget {
         const CircleAvatar(
           radius: 12,
           backgroundColor: Color(0xFF4A90D9),
-          child: Icon(Icons.lightbulb_outline, size: 14, color: Colors.white),
+          child: Text('👽', style: TextStyle(fontSize: 14)),
         ),
         const SizedBox(width: 8),
         Expanded(
@@ -242,7 +199,7 @@ class _AiMessage extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
-              message,
+              message.isEmpty ? '...' : message,
               style: const TextStyle(fontSize: 14, height: 1.5),
             ),
           ),
@@ -280,39 +237,12 @@ class _UserMessage extends StatelessWidget {
   }
 }
 
-class _HintMessage extends StatelessWidget {
-  final String hint;
-  const _HintMessage({required this.hint});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(left: 32, bottom: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.amber.shade50,
-        border: Border.all(color: Colors.amber.shade200),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        hint,
-        style: TextStyle(
-            fontSize: 12, color: Colors.amber.shade900, height: 1.4),
-      ),
-    );
-  }
-}
-
 class _InputArea extends StatelessWidget {
   final TextEditingController controller;
-  final bool Function() canHint;
-  final VoidCallback onHint;
   final void Function(String) onSubmit;
 
   const _InputArea({
     required this.controller,
-    required this.canHint,
-    required this.onHint,
     required this.onSubmit,
   });
 
@@ -322,19 +252,6 @@ class _InputArea extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
       child: Row(
         children: [
-          // 힌트 버튼
-          OutlinedButton.icon(
-            onPressed: canHint() ? onHint : null,
-            icon: const Icon(Icons.lightbulb, size: 16),
-            label: const Text('힌트', style: TextStyle(fontSize: 13)),
-            style: OutlinedButton.styleFrom(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              side: BorderSide(color: Colors.amber.shade400),
-              foregroundColor: Colors.amber.shade700,
-            ),
-          ),
-          const SizedBox(width: 8),
           // 답변 입력
           Expanded(
             child: TextField(
@@ -357,7 +274,7 @@ class _InputArea extends StatelessWidget {
               ),
               textInputAction: TextInputAction.send,
               onSubmitted: onSubmit,
-              maxLines: 1,
+              maxLines: null, // 여러 줄 입력 지원
             ),
           ),
           const SizedBox(width: 8),
