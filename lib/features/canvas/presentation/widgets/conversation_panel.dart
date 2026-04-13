@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:animated_text_kit/animated_text_kit.dart';
 import '../providers/alien_provider.dart';
 import '../../../../core/theme/app_theme.dart';
 import 'alien_character.dart';
+import 'neon_container.dart';
 
-/// 화면 하단에 고정되는 외계인 대화 패널.
+/// 화면 우측에 고정되는 외계인 대화 패널 (워크벤치 레이아웃).
 /// 대화 히스토리 + 답변 입력 포함.
 class ConversationPanel extends ConsumerStatefulWidget {
   const ConversationPanel({super.key});
@@ -16,6 +18,7 @@ class ConversationPanel extends ConsumerStatefulWidget {
 class _ConversationPanelState extends ConsumerState<ConversationPanel> {
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
+  bool _isAnimating = false;
 
   @override
   void dispose() {
@@ -41,67 +44,62 @@ class _ConversationPanelState extends ConsumerState<ConversationPanel> {
     final state = ref.watch(alienProvider);
 
     // 새 메시지가 추가되면 스크롤 아래로
-    ref.listen(alienProvider, (_, __) => _scrollToBottom());
+    ref.listen(alienProvider, (prev, next) {
+      if (next.turns.length > (prev?.turns.length ?? 0)) {
+        _scrollToBottom();
+        // 마지막 메시지가 AI 것이라면 애니메이션 시작
+        if (next.turns.last.aiQuestion.isNotEmpty) {
+          setState(() => _isAnimating = true);
+        }
+      }
+    });
 
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.spaceBlack.withOpacity(0.9),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        border: Border.all(
-          color: AppTheme.neonGreen.withOpacity(0.3),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.neonGreen.withOpacity(0.1),
-            blurRadius: 20,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
+    return NeonContainer(
+      padding: EdgeInsets.zero,
+      neonColor: AppTheme.neonGreen,
+      borderRadius: 0, // 사이드 패널이므로 모서리 둥글기 제거 또는 조정
+      blurRadius: 20,
+      backgroundColor: AppTheme.spaceBlack.withOpacity(0.85),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          // 핸들바
-          Center(
-            child: Container(
-              margin: const EdgeInsets.only(top: 12, bottom: 8),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppTheme.neonGreen.withOpacity(0.5),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-
           // 헤더
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: Row(
               children: [
                 const AlienCharacter(size: 40),
-                const SizedBox(width: 8),
-                const Text(
-                  '외계인 조사관',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.neonGreen,
-                    fontSize: 16,
-                    letterSpacing: 1.2,
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '외계인 조사관',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.neonGreen,
+                          fontSize: 16,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      Text(
+                        'ALIEN-TR-2024',
+                        style: TextStyle(
+                          color: Colors.white24,
+                          fontSize: 10,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const Spacer(),
                 if (!state.isLoading)
-                  TextButton(
+                  IconButton(
                     onPressed: () {
                       ref.read(alienProvider.notifier).dismiss();
                     },
-                    child: Text('통신 종료',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.5), 
-                          fontSize: 12,
-                        )),
+                    icon: const Icon(Icons.close, color: Colors.white54, size: 20),
+                    tooltip: '통신 종료',
                   ),
               ],
             ),
@@ -109,32 +107,38 @@ class _ConversationPanelState extends ConsumerState<ConversationPanel> {
           Divider(height: 1, color: AppTheme.neonGreen.withOpacity(0.2)),
 
           // 대화 히스토리
-          ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: (MediaQuery.of(context).size.height -
-                          MediaQuery.of(context).viewInsets.bottom) *
-                      0.4,
-            ),
+          Expanded(
             child: ListView.builder(
               controller: _scrollController,
-              shrinkWrap: true,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               itemCount: state.turns.length,
               itemBuilder: (context, index) {
                 final turn = state.turns[index];
+                final isLast = index == state.turns.length - 1;
+
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // AI 질문 (외계인 메시지)
-                    if (turn.aiQuestion.isNotEmpty || (state.isLoading && index == state.turns.length - 1))
-                      _AiMessage(message: turn.aiQuestion),
-                    
+                    if (turn.aiQuestion.isNotEmpty ||
+                        (state.isLoading && isLast))
+                      _AiMessage(
+                        message: turn.aiQuestion,
+                        animate: isLast && _isAnimating,
+                        onFinished: () {
+                          if (mounted) {
+                            setState(() => _isAnimating = false);
+                            _scrollToBottom();
+                          }
+                        },
+                      ),
+
                     if (turn.userAnswer != null) ...[
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
                       _UserMessage(message: turn.userAnswer!),
                     ],
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
                   ],
                 );
               },
@@ -144,7 +148,7 @@ class _ConversationPanelState extends ConsumerState<ConversationPanel> {
           // 로딩 인디케이터
           if (state.isLoading)
             const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12),
+              padding: EdgeInsets.symmetric(vertical: 16),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -153,12 +157,13 @@ class _ConversationPanelState extends ConsumerState<ConversationPanel> {
                     height: 16,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(AppTheme.neonGreen),
+                      valueColor:
+                          AlwaysStoppedAnimation<Color>(AppTheme.neonGreen),
                     ),
                   ),
                   SizedBox(width: 12),
-                  Text('외계 신호 분석 중...', 
-                    style: TextStyle(color: AppTheme.neonGreen, fontSize: 13)),
+                  Text('외계 신호 분석 중...',
+                      style: TextStyle(color: AppTheme.neonGreen, fontSize: 13)),
                 ],
               ),
             ),
@@ -174,9 +179,10 @@ class _ConversationPanelState extends ConsumerState<ConversationPanel> {
             ),
 
           // 입력 영역
-          if (!state.isLoading && state.turns.isNotEmpty)
+          if (state.turns.isNotEmpty)
             _InputArea(
               controller: _controller,
+              isEnabled: !state.isLoading && !_isAnimating,
               onSubmit: (answer) {
                 if (answer.trim().isEmpty) return;
                 _controller.clear();
@@ -191,7 +197,14 @@ class _ConversationPanelState extends ConsumerState<ConversationPanel> {
 
 class _AiMessage extends StatelessWidget {
   final String message;
-  const _AiMessage({required this.message});
+  final bool animate;
+  final VoidCallback? onFinished;
+
+  const _AiMessage({
+    required this.message,
+    this.animate = false,
+    this.onFinished,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -202,33 +215,53 @@ class _AiMessage extends StatelessWidget {
           padding: const EdgeInsets.all(2),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: AppTheme.neonGreen, width: 1),
+            border: Border.all(color: AppTheme.neonGreen.withOpacity(0.5), width: 1),
           ),
-          child: const AlienCharacter(size: 32),
+          child: const AlienCharacter(size: 28),
         ),
         const SizedBox(width: 10),
         Expanded(
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppTheme.neonGreen.withOpacity(0.1),
+              color: AppTheme.neonGreen.withOpacity(0.05),
               borderRadius: const BorderRadius.only(
                 topRight: Radius.circular(16),
                 bottomLeft: Radius.circular(16),
                 bottomRight: Radius.circular(16),
               ),
               border: Border.all(
-                color: AppTheme.neonGreen.withOpacity(0.2),
+                color: AppTheme.neonGreen.withOpacity(0.15),
               ),
             ),
-            child: Text(
-              message.isEmpty ? '...' : message,
-              style: const TextStyle(
-                fontSize: 15, 
-                height: 1.5, 
-                color: Colors.white,
-              ),
-            ),
+            child: animate
+                ? DefaultTextStyle(
+                    style: const TextStyle(
+                      fontSize: 15,
+                      height: 1.5,
+                      color: Colors.white,
+                      fontFamily: 'Courier', // 기계적인 느낌
+                    ),
+                    child: AnimatedTextKit(
+                      animatedTexts: [
+                        TypewriterAnimatedText(
+                          message,
+                          speed: const Duration(milliseconds: 40),
+                        ),
+                      ],
+                      totalRepeatCount: 1,
+                      onFinished: onFinished,
+                      displayFullTextOnTap: true,
+                    ),
+                  )
+                : Text(
+                    message.isEmpty ? '...' : message,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      height: 1.5,
+                      color: Colors.white,
+                    ),
+                  ),
           ),
         ),
       ],
@@ -245,13 +278,13 @@ class _UserMessage extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        const SizedBox(width: 40),
+        const SizedBox(width: 20),
         Flexible(
           child: Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: AppTheme.neonGreen,
-              borderRadius: const BorderRadius.only(
+              borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(16),
                 bottomLeft: Radius.circular(16),
                 bottomRight: Radius.circular(16),
@@ -260,10 +293,10 @@ class _UserMessage extends StatelessWidget {
             child: Text(
               message,
               style: const TextStyle(
-                fontSize: 15, 
-                color: AppTheme.spaceBlack, 
+                fontSize: 14,
+                color: AppTheme.spaceBlack,
                 fontWeight: FontWeight.w600,
-                height: 1.5,
+                height: 1.4,
               ),
             ),
           ),
@@ -275,77 +308,73 @@ class _UserMessage extends StatelessWidget {
 
 class _InputArea extends StatelessWidget {
   final TextEditingController controller;
+  final bool isEnabled;
   final void Function(String) onSubmit;
 
   const _InputArea({
     required this.controller,
+    required this.isEnabled,
     required this.onSubmit,
   });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
-      child: Row(
-        children: [
-          // 답변 입력
-          Expanded(
-            child: TextField(
-              controller: controller,
-              style: const TextStyle(color: Colors.white),
-              cursorColor: AppTheme.neonGreen,
-              decoration: InputDecoration(
-                hintText: '메시지를 입력하세요...',
-                hintStyle:
-                    TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.3)),
-                contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 12),
-                filled: true,
-                fillColor: Colors.white.withOpacity(0.05),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      child: Opacity(
+        opacity: isEnabled ? 1.0 : 0.5,
+        child: Row(
+          children: [
+            // 답변 입력
+            Expanded(
+              child: TextField(
+                controller: controller,
+                enabled: isEnabled,
+                style: const TextStyle(color: Colors.white, fontSize: 14),
+                cursorColor: AppTheme.neonGreen,
+                decoration: InputDecoration(
+                  hintText: isEnabled ? '오해를 정정해주세요...' : '분석 대기 중...',
+                  hintStyle: TextStyle(
+                      fontSize: 13, color: Colors.white.withOpacity(0.3)),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  filled: true,
+                  fillColor: Colors.white.withOpacity(0.05),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide:
+                        const BorderSide(color: AppTheme.neonGreen, width: 1.5),
+                  ),
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  borderSide:
-                      const BorderSide(color: AppTheme.neonGreen, width: 1.5),
-                ),
+                textInputAction: TextInputAction.send,
+                onSubmitted: isEnabled ? onSubmit : null,
+                maxLines: null,
               ),
-              textInputAction: TextInputAction.send,
-              onSubmitted: onSubmit,
-              maxLines: null,
             ),
-          ),
-          const SizedBox(width: 10),
-          // 전송 버튼
-          Container(
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.neonGreen,
-                  blurRadius: 8,
-                  spreadRadius: -2,
-                ),
-              ],
-            ),
-            child: IconButton(
-              onPressed: () => onSubmit(controller.text),
+            const SizedBox(width: 8),
+            // 전송 버튼
+            IconButton(
+              onPressed: isEnabled ? () => onSubmit(controller.text) : null,
               icon: const Icon(Icons.send_rounded),
               color: AppTheme.spaceBlack,
               style: IconButton.styleFrom(
                 backgroundColor: AppTheme.neonGreen,
+                disabledBackgroundColor: AppTheme.neonGreen.withOpacity(0.3),
                 padding: const EdgeInsets.all(12),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
+

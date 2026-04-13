@@ -7,6 +7,7 @@ import 'providers/canvas_provider.dart';
 import 'providers/alien_provider.dart';
 import 'widgets/interactive_canvas.dart';
 import 'widgets/conversation_panel.dart';
+import 'widgets/neon_container.dart';
 import '../../../core/theme/app_theme.dart';
 
 class CanvasScreen extends ConsumerStatefulWidget {
@@ -98,25 +99,41 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
     final hasStrokes = canvasState.strokes.isNotEmpty;
 
     return Scaffold(
+      backgroundColor: Colors.black,
       appBar: AppBar(
         title: const Text('MIND MUSE'),
         actions: [
-          // 되돌리기
-          IconButton(
-            icon: const Icon(Icons.undo, color: AppTheme.neonGreen),
-            tooltip: '되돌리기',
-            onPressed: hasStrokes
-                ? () => ref.read(canvasProvider.notifier).undoLastStroke()
-                : null,
-          ),
-          // 전체 초기화
-          IconButton(
-            icon: const Icon(Icons.refresh, color: AppTheme.neonGreen),
-            tooltip: '드로잉 초기화',
-            onPressed: () {
-              ref.read(canvasProvider.notifier).clearStrokes();
-              ref.read(alienProvider.notifier).dismiss();
-            },
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+            child: NeonContainer(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              neonColor: AppTheme.neonGreen,
+              borderRadius: 8,
+              blurRadius: 10,
+              backgroundColor: AppTheme.spaceBlack.withOpacity(0.5),
+              child: Row(
+                children: [
+                  // 되돌리기
+                  IconButton(
+                    icon: const Icon(Icons.undo, color: AppTheme.neonGreen),
+                    tooltip: '되돌리기',
+                    onPressed: hasStrokes
+                        ? () =>
+                            ref.read(canvasProvider.notifier).undoLastStroke()
+                        : null,
+                  ),
+                  // 전체 초기화
+                  IconButton(
+                    icon: const Icon(Icons.refresh, color: AppTheme.neonGreen),
+                    tooltip: '드로잉 초기화',
+                    onPressed: () {
+                      ref.read(canvasProvider.notifier).clearStrokes();
+                      ref.read(alienProvider.notifier).dismiss();
+                    },
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),
@@ -130,10 +147,11 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
             )
           : null,
       body: AuroraBackground(
-        child: Column(
+        child: Row(
           children: [
-            // 메인 캔버스
+            // 메인 캔버스 (워크벤치 좌측)
             Expanded(
+              flex: 7,
               child: Consumer(
                 builder: (context, ref, _) {
                   final canvasState = ref.watch(canvasProvider);
@@ -152,11 +170,16 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
               ),
             ),
 
-            // 대화 패널 (활성 상태일 때만 표시)
-            if (alienState.isActive) const ConversationPanel(),
+            // 대화 패널 (워크벤치 우측 - 활성 상태일 때만 표시)
+            if (alienState.isActive)
+              const Expanded(
+                flex: 3,
+                child: ConversationPanel(),
+              ),
           ],
         ),
       ),
     );
   }
 }
+
