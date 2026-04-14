@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../providers/alien_provider.dart';
 import '../../../../core/theme/app_theme.dart';
 import 'alien_character.dart';
@@ -48,7 +49,7 @@ class _ConversationPanelState extends ConsumerState<ConversationPanel> {
       if (next.turns.length > (prev?.turns.length ?? 0)) {
         _scrollToBottom();
         // 마지막 메시지가 AI 것이라면 애니메이션 시작
-        if (next.turns.last.aiQuestion.isNotEmpty) {
+        if (next.turns.isNotEmpty && next.turns.last.aiQuestion.isNotEmpty) {
           setState(() => _isAnimating = true);
         }
       }
@@ -63,30 +64,34 @@ class _ConversationPanelState extends ConsumerState<ConversationPanel> {
       child: Column(
         children: [
           // 헤더
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          Container(
+            padding: const EdgeInsets.fromLTRB(AppTheme.spaceMD,
+                AppTheme.spaceMD, AppTheme.spaceMD, AppTheme.spaceSM),
+            decoration: const BoxDecoration(
+              color: AppTheme.panelBlack,
+            ),
             child: Row(
               children: [
                 const AlienCharacter(size: 40),
-                const SizedBox(width: 12),
-                const Expanded(
+                const SizedBox(width: AppTheme.spaceMD),
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         '외계인 조사관',
-                        style: TextStyle(
+                        style: GoogleFonts.rajdhani(
                           fontWeight: FontWeight.bold,
                           color: AppTheme.neonGreen,
-                          fontSize: 16,
-                          letterSpacing: 1.2,
+                          fontSize: 18,
+                          letterSpacing: 1.5,
                         ),
                       ),
                       Text(
-                        'ALIEN-TR-2024',
-                        style: TextStyle(
-                          color: Colors.white24,
-                          fontSize: 10,
+                        'ALIEN-TR-2024 / SECTOR-7',
+                        style: GoogleFonts.rajdhani(
+                          color: Colors.white.withOpacity(0.2),
+                          fontSize: 11,
                           letterSpacing: 1.0,
                         ),
                       ),
@@ -98,7 +103,8 @@ class _ConversationPanelState extends ConsumerState<ConversationPanel> {
                     onPressed: () {
                       ref.read(alienProvider.notifier).dismiss();
                     },
-                    icon: const Icon(Icons.close, color: Colors.white54, size: 20),
+                    icon:
+                        const Icon(Icons.close, color: Colors.white54, size: 20),
                     tooltip: '통신 종료',
                   ),
               ],
@@ -110,7 +116,8 @@ class _ConversationPanelState extends ConsumerState<ConversationPanel> {
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppTheme.spaceMD, vertical: AppTheme.spaceMD),
               itemCount: state.turns.length,
               itemBuilder: (context, index) {
                 final turn = state.turns[index];
@@ -134,11 +141,11 @@ class _ConversationPanelState extends ConsumerState<ConversationPanel> {
                       ),
 
                     if (turn.userAnswer != null) ...[
-                      const SizedBox(height: 16),
+                      const SizedBox(height: AppTheme.spaceMD),
                       _UserMessage(message: turn.userAnswer!),
                     ],
 
-                    const SizedBox(height: 20),
+                    const SizedBox(height: AppTheme.spaceLG),
                   ],
                 );
               },
@@ -215,32 +222,39 @@ class _AiMessage extends StatelessWidget {
           padding: const EdgeInsets.all(2),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: AppTheme.neonGreen.withOpacity(0.5), width: 1),
+            border: Border.all(
+                color: AppTheme.neonGreen.withOpacity(0.5), width: 1),
           ),
           child: const AlienCharacter(size: 28),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: AppTheme.spaceSM),
         Expanded(
           child: Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(AppTheme.spaceMD),
             decoration: BoxDecoration(
-              color: AppTheme.neonGreen.withOpacity(0.05),
+              color: AppTheme.spaceBlack.withOpacity(0.85),
               borderRadius: const BorderRadius.only(
-                topRight: Radius.circular(16),
-                bottomLeft: Radius.circular(16),
-                bottomRight: Radius.circular(16),
+                topRight: Radius.circular(AppTheme.spaceMD),
+                bottomLeft: Radius.circular(AppTheme.spaceMD),
+                bottomRight: Radius.circular(AppTheme.spaceMD),
               ),
               border: Border.all(
-                color: AppTheme.neonGreen.withOpacity(0.15),
+                color: AppTheme.neonGreen.withOpacity(0.3),
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.neonGreen.withOpacity(0.05),
+                  blurRadius: 10,
+                  spreadRadius: 1,
+                ),
+              ],
             ),
             child: animate
                 ? DefaultTextStyle(
-                    style: const TextStyle(
+                    style: GoogleFonts.courierPrime(
                       fontSize: 15,
                       height: 1.5,
                       color: Colors.white,
-                      fontFamily: 'Courier', // 기계적인 느낌
                     ),
                     child: AnimatedTextKit(
                       animatedTexts: [
@@ -256,7 +270,7 @@ class _AiMessage extends StatelessWidget {
                   )
                 : Text(
                     message.isEmpty ? '...' : message,
-                    style: const TextStyle(
+                    style: GoogleFonts.courierPrime(
                       fontSize: 15,
                       height: 1.5,
                       color: Colors.white,
@@ -278,16 +292,16 @@ class _UserMessage extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        const SizedBox(width: 20),
+        const SizedBox(width: AppTheme.spaceXL),
         Flexible(
           child: Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(AppTheme.spaceMD),
             decoration: const BoxDecoration(
               color: AppTheme.neonGreen,
               borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(16),
-                bottomLeft: Radius.circular(16),
-                bottomRight: Radius.circular(16),
+                topLeft: Radius.circular(AppTheme.spaceMD),
+                bottomLeft: Radius.circular(AppTheme.spaceMD),
+                bottomRight: Radius.circular(AppTheme.spaceMD),
               ),
             ),
             child: Text(
@@ -320,7 +334,8 @@ class _InputArea extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      padding: const EdgeInsets.fromLTRB(
+          AppTheme.spaceMD, AppTheme.spaceSM, AppTheme.spaceMD, AppTheme.spaceLG),
       child: Opacity(
         opacity: isEnabled ? 1.0 : 0.5,
         child: Row(
@@ -359,7 +374,7 @@ class _InputArea extends StatelessWidget {
                 maxLines: null,
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppTheme.spaceSM),
             // 전송 버튼
             IconButton(
               onPressed: isEnabled ? () => onSubmit(controller.text) : null,
