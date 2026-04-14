@@ -8,6 +8,7 @@ import 'providers/alien_provider.dart';
 import 'widgets/interactive_canvas.dart';
 import 'widgets/conversation_panel.dart';
 import 'widgets/neon_container.dart';
+import 'widgets/resizable_split_view.dart';
 import '../../../core/theme/app_theme.dart';
 
 class CanvasScreen extends ConsumerStatefulWidget {
@@ -29,8 +30,12 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
     _imageFile = File(widget.imagePath);
     // 새 이미지로 진입할 때 이전 드로잉/대화 상태 초기화
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       ref.read(canvasProvider.notifier).clearStrokes();
       ref.read(alienProvider.notifier).dismiss();
+
+      // 선제적 대화 시작: 이미지 분석 및 첫 질문 유도
+      _onAskAI();
     });
   }
 
@@ -147,12 +152,27 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
             )
           : null,
       body: AuroraBackground(
-        child: Row(
-          children: [
-            // 메인 캔버스 (워크벤치 좌측)
-            Expanded(
-              flex: 7,
-              child: Consumer(
+        child: (alienState.isActive || alienState.isLoading)
+            ? ResizableSplitView(
+                leftChild: Consumer(
+                  builder: (context, ref, _) {
+                    final canvasState = ref.watch(canvasProvider);
+                    return InteractiveCanvas(
+                      key: _canvasKey,
+                      imageFile: _imageFile,
+                      strokes: canvasState.strokes,
+                      currentPoints: canvasState.currentPoints,
+                      onPanStart: (pos) =>
+                          ref.read(canvasProvider.notifier).startStroke(pos),
+                      onPanUpdate: (pos) =>
+                          ref.read(canvasProvider.notifier).addPoint(pos),
+                      onPanEnd: _onStrokeEnd,
+                    );
+                  },
+                ),
+                rightChild: const ConversationPanel(),
+              )
+            : Consumer(
                 builder: (context, ref, _) {
                   final canvasState = ref.watch(canvasProvider);
                   return InteractiveCanvas(
@@ -168,16 +188,6 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
                   );
                 },
               ),
-            ),
-
-            // 대화 패널 (워크벤치 우측 - 활성 상태일 때만 표시)
-            if (alienState.isActive)
-              const Expanded(
-                flex: 3,
-                child: ConversationPanel(),
-              ),
-          ],
-        ),
       ),
     );
   }
