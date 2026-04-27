@@ -1,0 +1,55 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-04-27T09:47:33.339Z",
+  "phase": "hotfix",
+  "phase_name": "외계인 조사관 API 연동 수정 + 보안 패치",
+  "phase_dir": "root",
+  "plan": 1,
+  "task": 5,
+  "total_tasks": 5,
+  "status": "paused",
+  "completed_tasks": [
+    {"id": 1, "name": "외계인 조사관 connection timeout 에러 원인 분석", "status": "done", "commit": "디버거 에이전트 조사 완료"},
+    {"id": 2, "name": "FastAPI 백엔드 제거 → google_generative_ai SDK 직접 호출로 교체", "status": "done", "commit": "3fb160a"},
+    {"id": 3, "name": ".env API 키 유출 대응 (git 히스토리 완전 삭제 + force push)", "status": "done", "commit": "3fb160a (force push 후 재작성)"},
+    {"id": 4, "name": "새 GEMINI_API_KEY 발급 및 .env 업데이트", "status": "done", "commit": "(미커밋 — .gitignore로 보호됨)"},
+    {"id": 5, "name": "APK 빌드 (ASCII 경로 우회)", "status": "done", "commit": "build/app/outputs/flutter-apk/app-release.apk (60.8MB)"}
+  ],
+  "remaining_tasks": [
+    {"id": 6, "name": "실기기/에뮬레이터에서 외계인 조사관 동작 최종 검증", "status": "not_started"}
+  ],
+  "blockers": [
+    {
+      "description": "APK 빌드 시 프로젝트 경로에 한글(개인프로젝트) 포함으로 Dart AOT 실패",
+      "type": "technical",
+      "workaround": "C:\\mmu에 프로젝트 복사 → 빌드 → APK 복사 → 임시폴더 삭제"
+    }
+  ],
+  "human_actions_pending": [
+    {
+      "action": "실기기에서 APK 설치 후 외계인 조사관 동작 확인",
+      "context": "새 API 키로 Gemini API 직접 호출하는지 검증 필요",
+      "blocking": false
+    }
+  ],
+  "decisions": [
+    {
+      "decision": "FastAPI 백엔드 완전 제거, Flutter에서 Gemini SDK 직접 호출",
+      "rationale": "백엔드 서버 실행 없이 앱이 동작해야 하므로",
+      "phase": "hotfix"
+    },
+    {
+      "decision": "dio 패키지 제거, google_generative_ai: ^0.4.6 추가",
+      "rationale": "HTTP 중간 레이어 불필요해짐",
+      "phase": "hotfix"
+    },
+    {
+      "decision": "git filter-branch로 전체 히스토리에서 .env 삭제 후 force push",
+      "rationale": "GitHub secret scanning에 API 키 유출 감지됨. 즉시 대응 필요",
+      "phase": "hotfix"
+    }
+  ],
+  "uncommitted_files": [],
+  "next_action": "APK를 실기기에 설치하여 외계인 조사관 버튼 클릭 → Gemini API 응답 스트리밍 정상 동작 확인",
+  "context_notes": "모든 코드 변경 및 보안 패치 완료. .env는 .gitignore로 보호 중이며 로컬에만 존재. APK는 build/ 디렉터리에 있음(git 무시). 다음 세션에서는 실기기 테스트가 주요 과제."
+}
