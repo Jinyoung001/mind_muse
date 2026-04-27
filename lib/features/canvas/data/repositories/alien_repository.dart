@@ -15,18 +15,18 @@ class AlienRepository {
       '6. 말투는 격식체이나 감정 표현은 극도로 과장되게.\n'
       '7. 한국어로 대화하라.';
 
+  late final _model = GenerativeModel(
+    model: ApiConstants.gemmaModel,
+    apiKey: ApiConstants.geminiApiKey,
+    systemInstruction: Content.system(_systemPrompt),
+  );
+
   Stream<String> chat({
     required String message,
     required List<AlienMessage> history,
     String? imageBase64,
   }) async* {
     try {
-      final model = GenerativeModel(
-        model: ApiConstants.gemmaModel,
-        apiKey: ApiConstants.geminiApiKey,
-        systemInstruction: Content.system(_systemPrompt),
-      );
-
       final historyContents = history.map((msg) {
         return Content(
           msg.role == 'model' ? 'model' : 'user',
@@ -34,7 +34,7 @@ class AlienRepository {
         );
       }).toList();
 
-      final chatSession = model.startChat(history: historyContents);
+      final chatSession = _model.startChat(history: historyContents);
 
       final parts = <Part>[];
       if (imageBase64 != null) {

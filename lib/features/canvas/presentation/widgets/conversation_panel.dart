@@ -215,6 +215,12 @@ class _AiMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final messageStyle = GoogleFonts.courierPrime(
+      fontSize: 15,
+      height: 1.5,
+      color: Colors.white,
+    );
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -251,11 +257,7 @@ class _AiMessage extends StatelessWidget {
             ),
             child: animate
                 ? DefaultTextStyle(
-                    style: GoogleFonts.courierPrime(
-                      fontSize: 15,
-                      height: 1.5,
-                      color: Colors.white,
-                    ),
+                    style: messageStyle,
                     child: AnimatedTextKit(
                       animatedTexts: [
                         TypewriterAnimatedText(
@@ -270,11 +272,7 @@ class _AiMessage extends StatelessWidget {
                   )
                 : Text(
                     message.isEmpty ? '...' : message,
-                    style: GoogleFonts.courierPrime(
-                      fontSize: 15,
-                      height: 1.5,
-                      color: Colors.white,
-                    ),
+                    style: messageStyle,
                   ),
           ),
         ),

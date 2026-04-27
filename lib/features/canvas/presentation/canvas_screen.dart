@@ -39,6 +39,19 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
     });
   }
 
+  Widget _buildInteractiveCanvas() {
+    final canvasState = ref.watch(canvasProvider);
+    return InteractiveCanvas(
+      key: _canvasKey,
+      imageFile: _imageFile,
+      strokes: canvasState.strokes,
+      currentPoints: canvasState.currentPoints,
+      onPanStart: (pos) => ref.read(canvasProvider.notifier).startStroke(pos),
+      onPanUpdate: (pos) => ref.read(canvasProvider.notifier).addPoint(pos),
+      onPanEnd: _onStrokeEnd,
+    );
+  }
+
   Future<void> _onStrokeEnd() async {
     if (!mounted) return;
     // 획 저장만 — 질문은 "질문하기" 버튼에서 시작
@@ -102,6 +115,7 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
     final alienState = ref.watch(alienProvider);
     final canvasState = ref.watch(canvasProvider);
     final hasStrokes = canvasState.strokes.isNotEmpty;
+    final shouldShowSplitView = alienState.isActive || alienState.isLoading;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -142,7 +156,7 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
           ),
         ],
       ),
-      floatingActionButton: (!alienState.isActive && !alienState.isLoading)
+      floatingActionButton: !shouldShowSplitView
           ? FloatingActionButton.extended(
               onPressed: _onAskAI,
               icon: const Icon(Icons.rocket_launch),
@@ -152,42 +166,12 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
             )
           : null,
       body: AuroraBackground(
-        child: (alienState.isActive || alienState.isLoading)
+        child: shouldShowSplitView
             ? ResizableSplitView(
-                leftChild: Consumer(
-                  builder: (context, ref, _) {
-                    final canvasState = ref.watch(canvasProvider);
-                    return InteractiveCanvas(
-                      key: _canvasKey,
-                      imageFile: _imageFile,
-                      strokes: canvasState.strokes,
-                      currentPoints: canvasState.currentPoints,
-                      onPanStart: (pos) =>
-                          ref.read(canvasProvider.notifier).startStroke(pos),
-                      onPanUpdate: (pos) =>
-                          ref.read(canvasProvider.notifier).addPoint(pos),
-                      onPanEnd: _onStrokeEnd,
-                    );
-                  },
-                ),
+                leftChild: _buildInteractiveCanvas(),
                 rightChild: const ConversationPanel(),
               )
-            : Consumer(
-                builder: (context, ref, _) {
-                  final canvasState = ref.watch(canvasProvider);
-                  return InteractiveCanvas(
-                    key: _canvasKey,
-                    imageFile: _imageFile,
-                    strokes: canvasState.strokes,
-                    currentPoints: canvasState.currentPoints,
-                    onPanStart: (pos) =>
-                        ref.read(canvasProvider.notifier).startStroke(pos),
-                    onPanUpdate: (pos) =>
-                        ref.read(canvasProvider.notifier).addPoint(pos),
-                    onPanEnd: _onStrokeEnd,
-                  );
-                },
-              ),
+            : _buildInteractiveCanvas(),
       ),
     );
   }
