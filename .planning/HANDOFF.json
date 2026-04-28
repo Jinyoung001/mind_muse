@@ -1,77 +1,38 @@
 {
   "version": "1.0",
-  "timestamp": "2026-04-27T10:15:14.453Z",
-  "phase": "hotfix",
-  "phase_name": "simplify 리팩터링 + 이메일 오타 수정 + APK 재빌드",
-  "phase_dir": "root",
-  "plan": 1,
-  "task": 3,
-  "total_tasks": 3,
+  "timestamp": "2026-04-29T00:00:00.000Z",
+  "phase": null,
+  "phase_name": null,
+  "phase_dir": null,
+  "plan": null,
+  "task": null,
+  "total_tasks": null,
   "status": "paused",
   "completed_tasks": [
-    {
-      "id": 1,
-      "name": "/simplify 리팩터링 (GenerativeModel 캐싱, InteractiveCanvas 중복 제거, 스타일 변수 추출)",
-      "status": "done",
-      "commit": "1cd039c"
-    },
-    {
-      "id": 2,
-      "name": "git 커밋 이메일 오타 수정 (chumu→chunmu, 전체 58개 커밋 재작성 + force push)",
-      "status": "done",
-      "commit": "force push — master, feature/multimodal-socratic"
-    },
-    {
-      "id": 3,
-      "name": "APK 재빌드 (simplify 이후 최신 코드, C:\\mmu 우회 빌드)",
-      "status": "done",
-      "commit": "build/app/outputs/flutter-apk/app-release.apk (60.8MB, Apr 27 19:12)"
-    }
+    {"id": 1, "name": "텍스트 줄바꿈 수정 (CourierPrime → 기본 TextStyle)", "status": "done", "commit": "95936fa"},
+    {"id": 2, "name": "채팅창 레이아웃 세로 분할 (ResizableSplitView → Column 38/62)", "status": "done", "commit": "95936fa"},
+    {"id": 3, "name": "AI 답변 길이 제한 시스템 프롬프트 추가", "status": "done", "commit": "95936fa"},
+    {"id": 4, "name": "그림 전송 버그 수정 (renderBox null → MediaQuery 폴백)", "status": "done", "commit": "95936fa"},
+    {"id": 5, "name": "Rive 패키지 제거 + alien_character 이모지 대체", "status": "done", "commit": "95936fa"},
+    {"id": 6, "name": "README 현행화 (FastAPI/Rive/좌우분할 등 제거)", "status": "done", "commit": "95936fa"}
   ],
   "remaining_tasks": [
-    {
-      "id": 4,
-      "name": "실기기/에뮬레이터에서 외계인 조사관 동작 최종 검증",
-      "status": "not_started"
-    }
+    {"id": 7, "name": "실기기 테스트 (APK 설치 후 기능 검증)", "status": "not_started"}
   ],
-  "blockers": [
-    {
-      "description": "APK 빌드 시 프로젝트 경로에 한글(개인프로젝트) 포함으로 Dart AOT 실패",
-      "type": "technical",
-      "workaround": "C:\\mmu에 프로젝트 복사 → 빌드 → APK 복사 → 임시폴더 삭제"
-    }
-  ],
+  "blockers": [],
   "human_actions_pending": [
     {
-      "action": "실기기에서 APK 설치 후 외계인 조사관 동작 확인",
-      "context": "화면 진입 시 자동 AI 호출 + Gemini 스트리밍 응답 정상 여부 검증",
-      "blocking": false
-    },
-    {
-      "action": "GitHub Settings > Emails에서 chunmu11115@gmail.com verified 여부 확인",
-      "context": "이메일 오타 수정 후 GitHub 잔디 반영 여부 확인 필요",
+      "action": "APK 실기기 설치 후 테스트",
+      "context": "채팅 줄바꿈 정상 여부, 그림 전송 반영 여부, AI 답변 길이, 채팅창 가시성 확인",
       "blocking": false
     }
   ],
   "decisions": [
-    {
-      "decision": "GenerativeModel을 late final 클래스 필드로 캐싱",
-      "rationale": "매 chat() 호출마다 불필요하게 생성하던 것을 인스턴스 재사용으로 개선",
-      "phase": "hotfix"
-    },
-    {
-      "decision": "git filter-branch로 전체 58개 커밋 이메일 재작성 + force push",
-      "rationale": "chumu11115→chunmu11115 오타가 42개 커밋에 반영되어 GitHub 기여 연동 불가",
-      "phase": "hotfix"
-    },
-    {
-      "decision": "한글 경로 빌드 우회: C:\\mmu 임시 복사 방식 유지",
-      "rationale": "직접 빌드 실패 재현 확인 완료. ASCII 경로 영구 이전은 다음 기회로 미룸",
-      "phase": "hotfix"
-    }
+    {"decision": "Rive 제거 → 이모지로 대체", "rationale": "rive_common 네이티브 빌드 에러 해결, 해커톤 범위 내 최소 변경", "phase": null},
+    {"decision": "세로 Column 레이아웃 채택 (상 38% / 하 62%)", "rationale": "모바일에서 오른쪽 팝업보다 가시성 개선", "phase": null},
+    {"decision": "CourierPrime → 기본 TextStyle", "rationale": "CourierPrime이 한국어 미지원으로 글자당 줄바꿈 발생", "phase": null}
   ],
   "uncommitted_files": [],
-  "next_action": "APK를 실기기에 설치하여 외계인 조사관 자동 시작 + Gemini API 스트리밍 정상 동작 확인",
-  "context_notes": "모든 코드 변경 및 이메일 수정 완료. APK는 build/ 디렉터리에 있음(git 무시). 다음 세션에서는 실기기 테스트가 주요 과제."
+  "next_action": "adb install build/app/outputs/flutter-apk/app-debug.apk 후 실기기 테스트",
+  "context_notes": "UI 개선 세션 완료. origin/master 최신 (95936fa). flutter build apk --debug 성공. 이전 세션의 APK 경로 한글 문제는 debug 빌드에서는 발생하지 않는 것으로 보임 (이번 세션 직접 빌드 성공)."
 }
