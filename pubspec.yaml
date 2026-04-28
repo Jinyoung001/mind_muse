@@ -17,7 +17,6 @@ dependencies:
   google_generative_ai: ^0.4.6
   google_fonts: ^6.2.1
   aurora_background: ^1.0.2
-  rive: ^0.13.0
   animated_text_kit: ^4.2.2
 
 dev_dependencies:

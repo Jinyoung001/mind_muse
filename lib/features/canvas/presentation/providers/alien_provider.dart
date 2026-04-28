@@ -174,6 +174,11 @@ class AlienNotifier extends StateNotifier<AlienState> {
     }
   }
 
+  /// 드로잉 완료 시 합성 이미지만 교체 (대화 흐름 유지)
+  void updateCompositeImage(Uint8List bytes) {
+    state = state.copyWith(compositeImage: bytes);
+  }
+
   /// 대화 종료 및 상태 초기화
   void dismiss() {
     state = const AlienState();

@@ -8,7 +8,6 @@ import 'providers/alien_provider.dart';
 import 'widgets/interactive_canvas.dart';
 import 'widgets/conversation_panel.dart';
 import 'widgets/neon_container.dart';
-import 'widgets/resizable_split_view.dart';
 import '../../../core/theme/app_theme.dart';
 
 class CanvasScreen extends ConsumerStatefulWidget {
@@ -54,8 +53,32 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
 
   Future<void> _onStrokeEnd() async {
     if (!mounted) return;
-    // 획 저장만 — 질문은 "질문하기" 버튼에서 시작
-    ref.read(canvasProvider.notifier).endStroke();
+    final stroke = ref.read(canvasProvider.notifier).endStroke();
+    if (stroke == null) return;
+
+    // 획이 완성될 때마다 합성 이미지 갱신
+    final renderBox =
+        _canvasKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox == null && !mounted) return;
+    final containerSize = renderBox?.size ?? MediaQuery.of(context).size;
+
+    try {
+      final strokes = ref.read(canvasProvider).strokes;
+      final imageBytes = await _compositeService.composite(
+        imageFile: _imageFile,
+        strokes: strokes,
+        containerSize: containerSize,
+      );
+      if (!mounted) return;
+      // 대화가 이미 시작된 경우 → 합성 이미지만 업데이트 (대화 흐름 유지)
+      final alienState = ref.read(alienProvider);
+      if (alienState.isActive) {
+        ref.read(alienProvider.notifier).updateCompositeImage(imageBytes);
+      }
+      // 비활성 상태면 FAB이 보이므로 사용자가 직접 시작 — 아무것도 안 함
+    } catch (e) {
+      // 합성 실패 시 무시 (드로잉 계속 가능)
+    }
   }
 
   /// 드로잉 없이 전체 이미지를 AI에게 질문
@@ -64,15 +87,7 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
 
     final renderBox =
         _canvasKey.currentContext?.findRenderObject() as RenderBox?;
-    if (renderBox == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('캔버스를 찾을 수 없습니다. 잠시 후 다시 시도하세요.')),
-        );
-      }
-      return;
-    }
-    final containerSize = renderBox.size;
+    final containerSize = renderBox?.size ?? MediaQuery.of(context).size;
 
     try {
       final strokes = ref.read(canvasProvider).strokes;
@@ -167,9 +182,18 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
           : null,
       body: AuroraBackground(
         child: shouldShowSplitView
-            ? ResizableSplitView(
-                leftChild: _buildInteractiveCanvas(),
-                rightChild: const ConversationPanel(),
+            ? LayoutBuilder(
+                builder: (context, constraints) {
+                  return Column(
+                    children: [
+                      SizedBox(
+                        height: constraints.maxHeight * 0.38,
+                        child: _buildInteractiveCanvas(),
+                      ),
+                      const Expanded(child: ConversationPanel()),
+                    ],
+                  );
+                },
               )
             : _buildInteractiveCanvas(),
       ),

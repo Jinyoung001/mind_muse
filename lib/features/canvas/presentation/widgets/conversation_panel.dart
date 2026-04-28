@@ -117,7 +117,7 @@ class _ConversationPanelState extends ConsumerState<ConversationPanel> {
             child: ListView.builder(
               controller: _scrollController,
               padding: const EdgeInsets.symmetric(
-                  horizontal: AppTheme.spaceMD, vertical: AppTheme.spaceMD),
+                  horizontal: AppTheme.spaceLG, vertical: AppTheme.spaceMD),
               itemCount: state.turns.length,
               itemBuilder: (context, index) {
                 final turn = state.turns[index];
@@ -215,10 +215,11 @@ class _AiMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final messageStyle = GoogleFonts.courierPrime(
+    const messageStyle = TextStyle(
       fontSize: 15,
-      height: 1.5,
+      height: 1.6,
       color: Colors.white,
+      letterSpacing: 0.0,
     );
 
     return Row(
@@ -234,46 +235,51 @@ class _AiMessage extends StatelessWidget {
           child: const AlienCharacter(size: 28),
         ),
         const SizedBox(width: AppTheme.spaceSM),
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(AppTheme.spaceMD),
-            decoration: BoxDecoration(
-              color: AppTheme.spaceBlack.withOpacity(0.85),
-              borderRadius: const BorderRadius.only(
-                topRight: Radius.circular(AppTheme.spaceMD),
-                bottomLeft: Radius.circular(AppTheme.spaceMD),
-                bottomRight: Radius.circular(AppTheme.spaceMD),
-              ),
-              border: Border.all(
-                color: AppTheme.neonGreen.withOpacity(0.3),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.neonGreen.withOpacity(0.05),
-                  blurRadius: 10,
-                  spreadRadius: 1,
+        Flexible(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Container(
+              padding: const EdgeInsets.all(AppTheme.spaceMD),
+              decoration: BoxDecoration(
+                color: AppTheme.spaceBlack.withOpacity(0.85),
+                borderRadius: const BorderRadius.only(
+                  topRight: Radius.circular(AppTheme.spaceMD),
+                  bottomLeft: Radius.circular(AppTheme.spaceMD),
+                  bottomRight: Radius.circular(AppTheme.spaceMD),
                 ),
-              ],
-            ),
-            child: animate
-                ? DefaultTextStyle(
-                    style: messageStyle,
-                    child: AnimatedTextKit(
-                      animatedTexts: [
-                        TypewriterAnimatedText(
-                          message,
-                          speed: const Duration(milliseconds: 40),
-                        ),
-                      ],
-                      totalRepeatCount: 1,
-                      onFinished: onFinished,
-                      displayFullTextOnTap: true,
-                    ),
-                  )
-                : Text(
-                    message.isEmpty ? '...' : message,
-                    style: messageStyle,
+                border: Border.all(
+                  color: AppTheme.neonGreen.withOpacity(0.3),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.neonGreen.withOpacity(0.05),
+                    blurRadius: 10,
+                    spreadRadius: 1,
                   ),
+                ],
+              ),
+              child: animate
+                  ? DefaultTextStyle(
+                      style: messageStyle,
+                      child: AnimatedTextKit(
+                        animatedTexts: [
+                          TypewriterAnimatedText(
+                            message,
+                            speed: const Duration(milliseconds: 40),
+                          ),
+                        ],
+                        totalRepeatCount: 1,
+                        onFinished: onFinished,
+                        displayFullTextOnTap: true,
+                      ),
+                    )
+                  : Text(
+                      message.isEmpty ? '...' : message,
+                      style: messageStyle,
+                      softWrap: true,
+                      textAlign: TextAlign.start,
+                    ),
+            ),
           ),
         ),
       ],
