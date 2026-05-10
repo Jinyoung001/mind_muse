@@ -25,25 +25,38 @@ class InteractiveCanvas extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onPanStart: (details) => onPanStart(details.localPosition),
-      onPanUpdate: (details) => onPanUpdate(details.localPosition),
-      onPanEnd: (_) => onPanEnd(),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          // 레이어 1: 교과서 이미지
-          Image.file(imageFile, fit: BoxFit.contain),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final w = constraints.maxWidth;
+        final h = constraints.maxHeight;
 
-          // 레이어 2: 사용자 드로잉
-          CustomPaint(
-            painter: DrawingPainter(
-              strokes: strokes,
-              currentPoints: currentPoints,
-            ),
+        return GestureDetector(
+          onPanStart: (details) => onPanStart(Offset(
+            details.localPosition.dx / w,
+            details.localPosition.dy / h,
+          )),
+          onPanUpdate: (details) => onPanUpdate(Offset(
+            details.localPosition.dx / w,
+            details.localPosition.dy / h,
+          )),
+          onPanEnd: (_) => onPanEnd(),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // 레이어 1: 교과서 이미지
+              Image.file(imageFile, fit: BoxFit.contain),
+
+              // 레이어 2: 사용자 드로잉 (정규화 좌표 0-1 → 현재 크기로 역정규화)
+              CustomPaint(
+                painter: DrawingPainter(
+                  strokes: strokes,
+                  currentPoints: currentPoints,
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

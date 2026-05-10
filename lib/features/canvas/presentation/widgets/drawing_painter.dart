@@ -20,15 +20,21 @@ class DrawingPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // 완성된 모든 획 그리기
+    // 완성된 모든 획 그리기 (정규화 0-1 → 현재 캔버스 크기로 역정규화)
     for (final stroke in strokes) {
-      _drawPoints(canvas, stroke.points);
+      _drawPoints(canvas, _denormalize(stroke.points, size));
     }
 
     // 현재 그리는 중인 획 그리기
     if (currentPoints.length >= 2) {
-      _drawPoints(canvas, currentPoints);
+      _drawPoints(canvas, _denormalize(currentPoints, size));
     }
+  }
+
+  List<Offset> _denormalize(List<Offset> points, Size size) {
+    return points
+        .map((p) => Offset(p.dx * size.width, p.dy * size.height))
+        .toList();
   }
 
   void _drawPoints(Canvas canvas, List<Offset> points) {

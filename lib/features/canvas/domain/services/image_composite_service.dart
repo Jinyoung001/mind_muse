@@ -58,10 +58,16 @@ class ImageCompositeService {
 
       for (final stroke in strokes) {
         if (stroke.points.length < 2) continue;
-        final path = Path()
-          ..moveTo(stroke.points.first.dx, stroke.points.first.dy);
-        for (int i = 1; i < stroke.points.length; i++) {
-          path.lineTo(stroke.points[i].dx, stroke.points[i].dy);
+        // 정규화 좌표(0-1)를 containerSize 기준으로 역정규화
+        final pts = stroke.points
+            .map((p) => Offset(
+                  p.dx * containerSize.width,
+                  p.dy * containerSize.height,
+                ))
+            .toList();
+        final path = Path()..moveTo(pts.first.dx, pts.first.dy);
+        for (int i = 1; i < pts.length; i++) {
+          path.lineTo(pts[i].dx, pts[i].dy);
         }
         canvas.drawPath(path, strokePaint);
       }
