@@ -127,6 +127,9 @@ class AlienNotifier extends StateNotifier<AlienState> {
 
     // 대화 이력을 AlienMessage로 변환
     final history = <AlienMessage>[];
+    // _primingHistory 마지막이 model 턴이므로, 첫 항목은 반드시 user여야 함
+    // (연속 model 턴이 되면 Gemma가 가짜 대화를 환각으로 생성함)
+    history.add(const AlienMessage(role: 'user', content: '이 그림에 대해 조사해 줘.'));
     for (int i = 0; i < turns.length - 1; i++) {
       history.add(AlienMessage(role: 'model', content: turns[i].aiQuestion));
       if (turns[i].userAnswer != null) {
