@@ -70,49 +70,54 @@ class AlienNotifier extends StateNotifier<AlienState> {
 
   AlienNotifier() : super(const AlienState());
 
+  static const _maxRetries = 3;
+
   /// 드로잉 완료 또는 버튼으로 호출 — 합성 이미지를 받아 첫 질문 생성
   Future<void> startConversation(Uint8List compositeImage,
       {bool hasDrawing = true}) async {
-    state = AlienState(
-      compositeImage: compositeImage,
-      isLoading: true,
-    );
+    state = AlienState(compositeImage: compositeImage, isLoading: true);
 
     final imageBase64 = base64Encode(compositeImage);
     const initialMessage = "이 그림에 대해 조사해 줘.";
 
-    // 새 턴 추가
-    final firstTurn = const ConversationTurn(aiQuestion: "");
-    state = state.copyWith(
-      turns: [firstTurn],
-    );
-
-    try {
-      final stream = _repository.chat(
-        message: initialMessage,
-        history: [],
-        imageBase64: imageBase64,
-      );
-
-      String fullResponse = "";
-      await for (final token in stream) {
-        if (!mounted) return;
-        fullResponse += token;
-        
-        final updatedTurns = List<ConversationTurn>.from(state.turns);
-        updatedTurns[0] = updatedTurns[0].copyWith(aiQuestion: fullResponse);
-        
-        state = state.copyWith(
-          turns: updatedTurns,
-        );
-      }
-      
-      state = state.copyWith(isLoading: false);
-    } catch (e) {
+    for (int attempt = 0; attempt < _maxRetries; attempt++) {
       state = state.copyWith(
-        isLoading: false,
-        error: '질문 생성 실패: $e',
+        turns: [const ConversationTurn(aiQuestion: "")],
+        isLoading: true,
+        error: null,
       );
+
+      try {
+        final stream = _repository.chat(
+          message: initialMessage,
+          history: [],
+          imageBase64: imageBase64,
+        );
+
+        String fullResponse = "";
+        await for (final token in stream) {
+          if (!mounted) return;
+          fullResponse += token;
+
+          final updatedTurns = List<ConversationTurn>.from(state.turns);
+          updatedTurns[0] = updatedTurns[0].copyWith(aiQuestion: fullResponse);
+          state = state.copyWith(turns: updatedTurns, isLoading: false);
+        }
+
+        final cleaned = AlienRepository.cleanResponse(fullResponse);
+        if (cleaned.isNotEmpty && cleaned != fullResponse) {
+          final updatedTurns = List<ConversationTurn>.from(state.turns);
+          updatedTurns[0] = updatedTurns[0].copyWith(aiQuestion: cleaned);
+          state = state.copyWith(turns: updatedTurns);
+        }
+        return;
+      } catch (e) {
+        if (attempt < _maxRetries - 1) {
+          await Future.delayed(const Duration(seconds: 1));
+        } else {
+          state = state.copyWith(isLoading: false, error: '질문 생성 실패: $e');
+        }
+      }
     }
   }
 
@@ -123,12 +128,9 @@ class AlienNotifier extends StateNotifier<AlienState> {
     // 현재 턴에 답변 저장
     final turns = List<ConversationTurn>.from(state.turns);
     turns[turns.length - 1] = turns.last.copyWith(userAnswer: answer);
-    state = state.copyWith(turns: turns, isLoading: true, error: null);
 
-    // 대화 이력을 AlienMessage로 변환
+    // 대화 이력 구성 (재시도 시 동일하게 사용)
     final history = <AlienMessage>[];
-    // _primingHistory 마지막이 model 턴이므로, 첫 항목은 반드시 user여야 함
-    // (연속 model 턴이 되면 Gemma가 가짜 대화를 환각으로 생성함)
     history.add(const AlienMessage(role: 'user', content: '이 그림에 대해 조사해 줘.'));
     for (int i = 0; i < turns.length - 1; i++) {
       history.add(AlienMessage(role: 'model', content: turns[i].aiQuestion));
@@ -136,44 +138,58 @@ class AlienNotifier extends StateNotifier<AlienState> {
         history.add(AlienMessage(role: 'user', content: turns[i].userAnswer!));
       }
     }
-    // 마지막 턴의 질문 추가 (답변은 message로 전달)
     history.add(AlienMessage(role: 'model', content: turns.last.aiQuestion));
 
-    // 새 턴 추가 (빈 AI 응답으로 시작)
-    final nextTurn = const ConversationTurn(aiQuestion: "");
+    // 새 빈 턴 추가
     state = state.copyWith(
-      turns: [...state.turns, nextTurn],
+      turns: [...turns, const ConversationTurn(aiQuestion: "")],
+      isLoading: true,
+      error: null,
     );
 
-    try {
-      final stream = _repository.chat(
-        message: answer,
-        history: history,
-        // 이미지는 첫 요청 이후에는 생략 가능 (또는 계속 전송)
-        // 일단 첫 요청 때만 보내고 이후엔 history로 맥락 유지하는 게 일반적이지만,
-        // backend logic에 따라 다름. 여기서는 생략해 봄.
-      );
-
-      String fullResponse = "";
-      await for (final token in stream) {
-        if (!mounted) return;
-        fullResponse += token;
-        
-        final updatedTurns = List<ConversationTurn>.from(state.turns);
-        updatedTurns[updatedTurns.length - 1] = 
-            updatedTurns.last.copyWith(aiQuestion: fullResponse);
-        
-        state = state.copyWith(
-          turns: updatedTurns,
-        );
+    for (int attempt = 0; attempt < _maxRetries; attempt++) {
+      // 재시도 시 마지막 턴 초기화
+      if (attempt > 0) {
+        final t = List<ConversationTurn>.from(state.turns);
+        t[t.length - 1] = const ConversationTurn(aiQuestion: "");
+        state = state.copyWith(turns: t, isLoading: true, error: null);
       }
 
-      state = state.copyWith(isLoading: false);
-    } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: '응답 생성 실패: $e',
-      );
+      try {
+        final stream = _repository.chat(
+          message: answer,
+          history: history,
+          imageBase64: state.compositeImage != null
+              ? base64Encode(state.compositeImage!)
+              : null,
+        );
+
+        String fullResponse = "";
+        await for (final token in stream) {
+          if (!mounted) return;
+          fullResponse += token;
+
+          final updatedTurns = List<ConversationTurn>.from(state.turns);
+          updatedTurns[updatedTurns.length - 1] =
+              updatedTurns.last.copyWith(aiQuestion: fullResponse);
+          state = state.copyWith(turns: updatedTurns, isLoading: false);
+        }
+
+        final cleaned = AlienRepository.cleanResponse(fullResponse);
+        if (cleaned.isNotEmpty && cleaned != fullResponse) {
+          final updatedTurns = List<ConversationTurn>.from(state.turns);
+          updatedTurns[updatedTurns.length - 1] =
+              updatedTurns.last.copyWith(aiQuestion: cleaned);
+          state = state.copyWith(turns: updatedTurns);
+        }
+        return;
+      } catch (e) {
+        if (attempt < _maxRetries - 1) {
+          await Future.delayed(const Duration(seconds: 1));
+        } else {
+          state = state.copyWith(isLoading: false, error: '응답 생성 실패: $e');
+        }
+      }
     }
   }
 

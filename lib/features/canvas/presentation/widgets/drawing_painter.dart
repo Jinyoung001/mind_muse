@@ -5,35 +5,48 @@ import '../../data/models/drawn_stroke_model.dart';
 class DrawingPainter extends CustomPainter {
   final List<DrawnStrokeModel> strokes;
   final List<Offset> currentPoints;
+  final Size? imageNaturalSize;
 
   DrawingPainter({
     required this.strokes,
     required this.currentPoints,
+    this.imageNaturalSize,
   });
 
   final _strokePaint = Paint()
-    ..color = const Color(0xFFE74C3C)  // 붉은색 형광펜 느낌
+    ..color = const Color(0xFFE74C3C)
     ..strokeWidth = 4.0
     ..strokeCap = StrokeCap.round
     ..strokeJoin = StrokeJoin.round
     ..style = PaintingStyle.stroke;
 
+  /// BoxFit.contain 기준 이미지 표시 영역 (정규화 좌표의 기준)
+  Rect _imageRect(Size canvasSize) {
+    if (imageNaturalSize == null) return Offset.zero & canvasSize;
+    final fitted = applyBoxFit(BoxFit.contain, imageNaturalSize!, canvasSize);
+    final d = fitted.destination;
+    return Rect.fromLTWH(
+      (canvasSize.width - d.width) / 2,
+      (canvasSize.height - d.height) / 2,
+      d.width,
+      d.height,
+    );
+  }
+
   @override
   void paint(Canvas canvas, Size size) {
-    // 완성된 모든 획 그리기 (정규화 0-1 → 현재 캔버스 크기로 역정규화)
+    final r = _imageRect(size);
     for (final stroke in strokes) {
-      _drawPoints(canvas, _denormalize(stroke.points, size));
+      _drawPoints(canvas, _denormalize(stroke.points, r));
     }
-
-    // 현재 그리는 중인 획 그리기
     if (currentPoints.length >= 2) {
-      _drawPoints(canvas, _denormalize(currentPoints, size));
+      _drawPoints(canvas, _denormalize(currentPoints, r));
     }
   }
 
-  List<Offset> _denormalize(List<Offset> points, Size size) {
+  List<Offset> _denormalize(List<Offset> points, Rect r) {
     return points
-        .map((p) => Offset(p.dx * size.width, p.dy * size.height))
+        .map((p) => Offset(r.left + p.dx * r.width, r.top + p.dy * r.height))
         .toList();
   }
 
@@ -50,5 +63,6 @@ class DrawingPainter extends CustomPainter {
   @override
   bool shouldRepaint(DrawingPainter oldDelegate) =>
       oldDelegate.strokes != strokes ||
-      oldDelegate.currentPoints != currentPoints;
+      oldDelegate.currentPoints != currentPoints ||
+      oldDelegate.imageNaturalSize != imageNaturalSize;
 }

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aurora_background/aurora_background.dart';
@@ -23,12 +24,13 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
   late final File _imageFile;
   final GlobalKey _canvasKey = GlobalKey();
   final _compositeService = ImageCompositeService();
+  Size? _imageNaturalSize;
 
   @override
   void initState() {
     super.initState();
     _imageFile = File(widget.imagePath);
-    // 새 이미지로 진입할 때 이전 드로잉/대화 상태 초기화
+    _loadImageSize();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       ref.read(canvasProvider.notifier).clearStrokes();
@@ -36,11 +38,28 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
     });
   }
 
+  Future<void> _loadImageSize() async {
+    try {
+      final bytes = await _imageFile.readAsBytes();
+      final codec = await ui.instantiateImageCodec(bytes);
+      final frame = await codec.getNextFrame();
+      final img = frame.image;
+      if (mounted) {
+        setState(() {
+          _imageNaturalSize = Size(img.width.toDouble(), img.height.toDouble());
+        });
+      }
+      img.dispose();
+      codec.dispose();
+    } catch (_) {}
+  }
+
   Widget _buildInteractiveCanvas() {
     final canvasState = ref.watch(canvasProvider);
     return InteractiveCanvas(
       key: _canvasKey,
       imageFile: _imageFile,
+      imageNaturalSize: _imageNaturalSize,
       strokes: canvasState.strokes,
       currentPoints: canvasState.currentPoints,
       onPanStart: (pos) => ref.read(canvasProvider.notifier).startStroke(pos),

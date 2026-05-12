@@ -27,38 +27,49 @@ class AlienRepository {
     String? imageBase64,
   }) async* {
     try {
-      final historyContents = history.map((msg) {
-        return Content(
-          msg.role == 'model' ? 'model' : 'user',
-          [TextPart(msg.content)],
-        );
-      }).toList();
+      final allContents = <Content>[];
 
-      final chatSession = _model.startChat(history: historyContents);
+      // 히스토리 변환: 첫 번째 user 턴에 원본 이미지 포함 (멀티턴 맥락 유지)
+      for (int i = 0; i < history.length; i++) {
+        final msg = history[i];
+        if (i == 0 && msg.role != 'model' && imageBase64 != null) {
+          final bytes = base64Decode(imageBase64);
+          allContents.add(Content('user', [
+            DataPart('image/png', bytes),
+            TextPart(msg.content),
+          ]));
+        } else {
+          allContents.add(Content(
+            msg.role == 'model' ? 'model' : 'user',
+            [TextPart(msg.content)],
+          ));
+        }
+      }
 
+      // 현재 메시지 추가 (history가 없으면 이미지도 포함)
       final parts = <Part>[];
-      if (imageBase64 != null) {
+      if (history.isEmpty && imageBase64 != null) {
         final bytes = base64Decode(imageBase64);
         parts.add(DataPart('image/png', bytes));
       }
       parts.add(TextPart(
         message.isNotEmpty ? message : '이것이 무엇인지 분석해주시오.',
       ));
+      allContents.add(Content('user', parts));
 
-      final stream = chatSession.sendMessageStream(Content.multi(parts));
-      final buffer = StringBuffer();
+      final stream = _model.generateContentStream(allContents);
       await for (final chunk in stream) {
         final text = chunk.text;
         if (text != null && text.isNotEmpty) {
-          buffer.write(text);
+          yield text;
         }
       }
-      final cleaned = _stripEchoMarkers(buffer.toString());
-      if (cleaned.isNotEmpty) yield cleaned;
     } catch (e) {
-      yield 'Error: $e';
+      rethrow;
     }
   }
+
+  static String cleanResponse(String text) => _stripEchoMarkers(text);
 
   static final _reQuotes = RegExp(r'[“”„＂]');
   static final _reEnglishBlock = RegExp(r'”?\s*\([A-Z][^)]*\)');

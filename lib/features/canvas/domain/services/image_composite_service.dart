@@ -58,11 +58,11 @@ class ImageCompositeService {
 
       for (final stroke in strokes) {
         if (stroke.points.length < 2) continue;
-        // 정규화 좌표(0-1)를 containerSize 기준으로 역정규화
+        // 정규화 좌표(0-1)를 이미지 표시 영역 기준으로 역정규화 (BoxFit.contain 오프셋 포함)
         final pts = stroke.points
             .map((p) => Offset(
-                  p.dx * containerSize.width,
-                  p.dy * containerSize.height,
+                  offsetX + p.dx * dstSize.width,
+                  offsetY + p.dy * dstSize.height,
                 ))
             .toList();
         final path = Path()..moveTo(pts.first.dx, pts.first.dy);
