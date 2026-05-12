@@ -8,6 +8,7 @@ import 'providers/alien_provider.dart';
 import 'widgets/interactive_canvas.dart';
 import 'widgets/conversation_panel.dart';
 import 'widgets/neon_container.dart';
+import 'widgets/resizable_split_view.dart';
 import '../../../core/theme/app_theme.dart';
 
 class CanvasScreen extends ConsumerStatefulWidget {
@@ -32,9 +33,6 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
       if (!mounted) return;
       ref.read(canvasProvider.notifier).clearStrokes();
       ref.read(alienProvider.notifier).dismiss();
-
-      // 선제적 대화 시작: 이미지 분석 및 첫 질문 유도
-      _onAskAI();
     });
   }
 
@@ -171,29 +169,22 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
           ),
         ],
       ),
-      floatingActionButton: !shouldShowSplitView
-          ? FloatingActionButton.extended(
+      floatingActionButton: (alienState.isLoading || alienState.isActive)
+          ? null
+          : FloatingActionButton.extended(
               onPressed: _onAskAI,
               icon: const Icon(Icons.rocket_launch),
               label: const Text('탐사 질문하기'),
               backgroundColor: AppTheme.neonGreen,
               foregroundColor: AppTheme.spaceBlack,
-            )
-          : null,
+            ),
       body: AuroraBackground(
         child: shouldShowSplitView
-            ? LayoutBuilder(
-                builder: (context, constraints) {
-                  return Column(
-                    children: [
-                      SizedBox(
-                        height: constraints.maxHeight * 0.38,
-                        child: _buildInteractiveCanvas(),
-                      ),
-                      const Expanded(child: ConversationPanel()),
-                    ],
-                  );
-                },
+            ? ResizableSplitView(
+                direction: Axis.vertical,
+                initialLeftRatio: 0.38,
+                leftChild: _buildInteractiveCanvas(),
+                rightChild: const ConversationPanel(),
               )
             : _buildInteractiveCanvas(),
       ),
