@@ -3,12 +3,8 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/painting.dart';
 import '../../data/models/drawn_stroke_model.dart';
+import '../../canvas_layout_utils.dart';
 
-/// 원본 이미지 파일 위에 드로잉 획을 합성하여 PNG bytes를 반환한다.
-///
-/// 드로잉 좌표는 InteractiveCanvas의 display 좌표(dp) 기준이다.
-/// 이미지를 [containerSize]에 BoxFit.contain으로 맞춰 그린 뒤,
-/// 동일 좌표계로 드로잉 선을 올려서 합성한다.
 class ImageCompositeService {
   Future<Uint8List> composite({
     required File imageFile,
@@ -19,7 +15,6 @@ class ImageCompositeService {
       throw ArgumentError('containerSize must have positive dimensions');
     }
 
-    // 1. 원본 이미지 디코딩
     final bytes = await imageFile.readAsBytes();
     final codec = await ui.instantiateImageCodec(bytes);
     final frame = await codec.getNextFrame();
@@ -27,44 +22,23 @@ class ImageCompositeService {
     final srcImage = frame.image;
 
     try {
-      // 2. containerSize 크기의 캔버스 생성
       final recorder = ui.PictureRecorder();
       final canvas = ui.Canvas(recorder);
 
-      // 3. BoxFit.contain으로 이미지를 캔버스 중앙에 그리기
-      final imageSize = Size(
-        srcImage.width.toDouble(),
-        srcImage.height.toDouble(),
-      );
-      final fittedSizes = applyBoxFit(BoxFit.contain, imageSize, containerSize);
-      final dstSize = fittedSizes.destination;
-      final offsetX = (containerSize.width - dstSize.width) / 2;
-      final offsetY = (containerSize.height - dstSize.height) / 2;
+      final imageSize = Size(srcImage.width.toDouble(), srcImage.height.toDouble());
+      final imageRect = containedImageRect(imageSize, containerSize);
 
       canvas.drawImageRect(
         srcImage,
         Rect.fromLTWH(0, 0, imageSize.width, imageSize.height),
-        Rect.fromLTWH(offsetX, offsetY, dstSize.width, dstSize.height),
+        imageRect,
         Paint(),
       );
 
-      // 4. 드로잉 선 합성 (DrawingPainter와 동일한 스타일)
-      final strokePaint = Paint()
-        ..color = const Color(0xFFE74C3C)
-        ..strokeWidth = 4.0
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round
-        ..style = PaintingStyle.stroke;
-
+      final strokePaint = drawingStrokePaint();
       for (final stroke in strokes) {
         if (stroke.points.length < 2) continue;
-        // 정규화 좌표(0-1)를 이미지 표시 영역 기준으로 역정규화 (BoxFit.contain 오프셋 포함)
-        final pts = stroke.points
-            .map((p) => Offset(
-                  offsetX + p.dx * dstSize.width,
-                  offsetY + p.dy * dstSize.height,
-                ))
-            .toList();
+        final pts = denormalizePoints(stroke.points, imageRect);
         final path = Path()..moveTo(pts.first.dx, pts.first.dy);
         for (int i = 1; i < pts.length; i++) {
           path.lineTo(pts[i].dx, pts[i].dy);
@@ -72,7 +46,6 @@ class ImageCompositeService {
         canvas.drawPath(path, strokePaint);
       }
 
-      // 5. PNG bytes로 변환
       final picture = recorder.endRecording();
       final compositeImage = await picture.toImage(
         containerSize.width.round(),

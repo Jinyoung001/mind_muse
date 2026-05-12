@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:mind_muse/core/constants/api_constants.dart';
 import 'package:mind_muse/features/canvas/data/models/alien_models.dart';
@@ -26,53 +26,46 @@ class AlienRepository {
     required List<AlienMessage> history,
     String? imageBase64,
   }) async* {
-    try {
-      final allContents = <Content>[];
+    final imageBytes = imageBase64 != null ? base64Decode(imageBase64) : null;
+    final allContents = <Content>[];
 
-      // 히스토리 변환: 첫 번째 user 턴에 원본 이미지 포함 (멀티턴 맥락 유지)
-      for (int i = 0; i < history.length; i++) {
-        final msg = history[i];
-        if (i == 0 && msg.role != 'model' && imageBase64 != null) {
-          final bytes = base64Decode(imageBase64);
-          allContents.add(Content('user', [
-            DataPart('image/png', bytes),
-            TextPart(msg.content),
-          ]));
-        } else {
-          allContents.add(Content(
-            msg.role == 'model' ? 'model' : 'user',
-            [TextPart(msg.content)],
-          ));
-        }
+    for (int i = 0; i < history.length; i++) {
+      final msg = history[i];
+      if (i == 0 && msg.role != 'model' && imageBytes != null) {
+        allContents.add(Content('user', [
+          DataPart('image/png', imageBytes),
+          TextPart(msg.content),
+        ]));
+      } else {
+        allContents.add(Content(
+          msg.role == 'model' ? 'model' : 'user',
+          [TextPart(msg.content)],
+        ));
       }
+    }
 
-      // 현재 메시지 추가 (history가 없으면 이미지도 포함)
-      final parts = <Part>[];
-      if (history.isEmpty && imageBase64 != null) {
-        final bytes = base64Decode(imageBase64);
-        parts.add(DataPart('image/png', bytes));
-      }
-      parts.add(TextPart(
-        message.isNotEmpty ? message : '이것이 무엇인지 분석해주시오.',
-      ));
-      allContents.add(Content('user', parts));
+    final parts = <Part>[];
+    if (history.isEmpty && imageBytes != null) {
+      parts.add(DataPart('image/png', imageBytes));
+    }
+    parts.add(TextPart(
+      message.isNotEmpty ? message : '이것이 무엇인지 분석해주시오.',
+    ));
+    allContents.add(Content('user', parts));
 
-      final stream = _model.generateContentStream(allContents);
-      await for (final chunk in stream) {
-        final text = chunk.text;
-        if (text != null && text.isNotEmpty) {
-          yield text;
-        }
+    final stream = _model.generateContentStream(allContents);
+    await for (final chunk in stream) {
+      final text = chunk.text;
+      if (text != null && text.isNotEmpty) {
+        yield text;
       }
-    } catch (e) {
-      rethrow;
     }
   }
 
   static String cleanResponse(String text) => _stripEchoMarkers(text);
 
-  static final _reQuotes = RegExp(r'[“”„＂]');
-  static final _reEnglishBlock = RegExp(r'”?\s*\([A-Z][^)]*\)');
+  static final _reQuotes = RegExp(r'[""„＂]');
+  static final _reEnglishBlock = RegExp(r'"?\s*\([A-Z][^)]*\)');
   static final _reCotPrefix = RegExp(r'^[,)\s]+');
   static final _reKorean = RegExp(r'[가-힣]');
   static final _reEnglish = RegExp(r'[a-zA-Z]');
@@ -82,27 +75,26 @@ class AlienRepository {
     // Unicode 따옴표 변형 → ASCII 정규화 후 영어 번역 블록 전역 제거
     // [^)]* 는 줄바꿈도 매칭하므로 여러 줄에 걸친 번역 괄호도 처리
     String s = text
-        .replaceAll(_reQuotes, '”')
+        .replaceAll(_reQuotes, '"')
         .replaceAll(_reEnglishBlock, '')
         .trim();
     if (s.isEmpty) return '';
 
-    // Gemma COT 패턴: [COT조각] “초안1” “초안2” 최종답변
-    // “ 로 분리하면 마지막 세그먼트가 인용부호 없는 최종 답변
+    // Gemma COT 패턴: [COT조각] "초안1" "초안2" 최종답변
+    // " 로 분리하면 마지막 세그먼트가 인용부호 없는 최종 답변
     // 뒤에서부터 순회하여 유효한 한국어 세그먼트 첫 발견 시 반환
     String tryExtract(String seg) {
       final lines = <String>[];
       for (final raw in seg.split('\n')) {
         String t = raw.trim();
         if (t.isEmpty) continue;
-        t = t.replaceFirst(_reCotPrefix, ''); // 앞쪽 COT 잔여물 제거: ),  이나 ,
+        t = t.replaceFirst(_reCotPrefix, '');
         if (t.isEmpty) continue;
 
         final k = _reKorean.allMatches(t).length;
         final e = _reEnglish.allMatches(t).length;
-        if (k == 0 || e > k) continue; // 한국어 없거나 영어 지배적
+        if (k == 0 || e > k) continue;
 
-        // COT 조각은 보통 ), 로 끝남 — 완성된 문장은 !?.다요까 로 끝남
         if (!_reSentenceEnd.hasMatch(t) &&
             !t.endsWith('다') &&
             !t.endsWith('요') &&
@@ -113,7 +105,6 @@ class AlienRepository {
       }
       if (lines.isEmpty) return '';
 
-      // 앞 줄이 뒷 줄과 60% 이상 공통 prefix → 중복 제거 (앞 줄 drop)
       final out = <String>[];
       outer:
       for (int i = 0; i < lines.length; i++) {

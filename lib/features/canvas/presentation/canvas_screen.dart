@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -41,17 +42,31 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
   Future<void> _loadImageSize() async {
     try {
       final bytes = await _imageFile.readAsBytes();
-      final codec = await ui.instantiateImageCodec(bytes);
-      final frame = await codec.getNextFrame();
-      final img = frame.image;
+      final buffer = await ui.ImmutableBuffer.fromUint8List(bytes);
+      final descriptor = await ui.ImageDescriptor.encoded(buffer);
       if (mounted) {
         setState(() {
-          _imageNaturalSize = Size(img.width.toDouble(), img.height.toDouble());
+          _imageNaturalSize = Size(
+            descriptor.width.toDouble(),
+            descriptor.height.toDouble(),
+          );
         });
       }
-      img.dispose();
-      codec.dispose();
+      descriptor.dispose();
+      buffer.dispose();
     } catch (_) {}
+  }
+
+  Future<Uint8List> _buildCompositeImage() async {
+    final renderBox =
+        _canvasKey.currentContext?.findRenderObject() as RenderBox?;
+    final containerSize = renderBox?.size ?? MediaQuery.of(context).size;
+    final strokes = ref.read(canvasProvider).strokes;
+    return _compositeService.composite(
+      imageFile: _imageFile,
+      strokes: strokes,
+      containerSize: containerSize,
+    );
   }
 
   Widget _buildInteractiveCanvas() {
@@ -73,52 +88,27 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
     final stroke = ref.read(canvasProvider.notifier).endStroke();
     if (stroke == null) return;
 
-    // 획이 완성될 때마다 합성 이미지 갱신
     final renderBox =
         _canvasKey.currentContext?.findRenderObject() as RenderBox?;
-    if (renderBox == null && !mounted) return;
-    final containerSize = renderBox?.size ?? MediaQuery.of(context).size;
+    if (renderBox == null || !mounted) return;
 
     try {
-      final strokes = ref.read(canvasProvider).strokes;
-      final imageBytes = await _compositeService.composite(
-        imageFile: _imageFile,
-        strokes: strokes,
-        containerSize: containerSize,
-      );
+      final imageBytes = await _buildCompositeImage();
       if (!mounted) return;
-      // 대화가 이미 시작된 경우 → 합성 이미지만 업데이트 (대화 흐름 유지)
       final alienState = ref.read(alienProvider);
       if (alienState.isActive) {
         ref.read(alienProvider.notifier).updateCompositeImage(imageBytes);
       }
-      // 비활성 상태면 FAB이 보이므로 사용자가 직접 시작 — 아무것도 안 함
-    } catch (e) {
-      // 합성 실패 시 무시 (드로잉 계속 가능)
-    }
+    } catch (_) {}
   }
 
-  /// 드로잉 없이 전체 이미지를 AI에게 질문
   Future<void> _onAskAI() async {
     if (!mounted) return;
 
-    final renderBox =
-        _canvasKey.currentContext?.findRenderObject() as RenderBox?;
-    final containerSize = renderBox?.size ?? MediaQuery.of(context).size;
-
     try {
-      final strokes = ref.read(canvasProvider).strokes;
-      final imageBytes = await _compositeService.composite(
-        imageFile: _imageFile,
-        strokes: strokes,
-        containerSize: containerSize,
-      );
-
+      final imageBytes = await _buildCompositeImage();
       if (mounted) {
-        await ref.read(alienProvider.notifier).startConversation(
-              imageBytes,
-              hasDrawing: strokes.isNotEmpty,
-            );
+        await ref.read(alienProvider.notifier).startConversation(imageBytes);
       }
     } catch (e) {
       if (mounted) {
@@ -131,7 +121,6 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // API 에러 발생 시 SnackBar로 표시
     ref.listen(alienProvider, (prev, next) {
       if (next.error != null && next.error != prev?.error) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -147,7 +136,6 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
     final alienState = ref.watch(alienProvider);
     final canvasState = ref.watch(canvasProvider);
     final hasStrokes = canvasState.strokes.isNotEmpty;
-    final shouldShowSplitView = alienState.isActive || alienState.isLoading;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -164,7 +152,6 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
               backgroundColor: AppTheme.spaceBlack.withOpacity(0.5),
               child: Row(
                 children: [
-                  // 되돌리기
                   IconButton(
                     icon: const Icon(Icons.undo, color: AppTheme.neonGreen),
                     tooltip: '되돌리기',
@@ -173,7 +160,6 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
                             ref.read(canvasProvider.notifier).undoLastStroke()
                         : null,
                   ),
-                  // 전체 초기화
                   IconButton(
                     icon: const Icon(Icons.refresh, color: AppTheme.neonGreen),
                     tooltip: '드로잉 초기화',
@@ -188,7 +174,7 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
           ),
         ],
       ),
-      floatingActionButton: (alienState.isLoading || alienState.isActive)
+      floatingActionButton: alienState.isActive
           ? null
           : FloatingActionButton.extended(
               onPressed: _onAskAI,
@@ -198,7 +184,7 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
               foregroundColor: AppTheme.spaceBlack,
             ),
       body: AuroraBackground(
-        child: shouldShowSplitView
+        child: alienState.isActive
             ? ResizableSplitView(
                 direction: Axis.vertical,
                 initialLeftRatio: 0.38,
@@ -210,4 +196,3 @@ class _CanvasScreenState extends ConsumerState<CanvasScreen> {
     );
   }
 }
-
