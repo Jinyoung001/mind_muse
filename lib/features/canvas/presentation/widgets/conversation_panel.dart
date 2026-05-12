@@ -28,6 +28,16 @@ class _ConversationPanelState extends ConsumerState<ConversationPanel> {
     super.dispose();
   }
 
+  String _friendlyError(String error) {
+    if (error.contains('SocketException') ||
+        error.contains('Failed host lookup') ||
+        error.contains('ClientException') ||
+        error.contains('errno')) {
+      return '인터넷 연결을 확인하고 다시 시도해주세요.';
+    }
+    return '통신 오류가 발생했습니다.';
+  }
+
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
@@ -178,10 +188,31 @@ class _ConversationPanelState extends ConsumerState<ConversationPanel> {
           // 에러 메시지
           if (state.error != null)
             Padding(
-              padding: const EdgeInsets.all(12),
-              child: Text(
-                '통신 오류: ${state.error!}',
-                style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+              child: Column(
+                children: [
+                  Text(
+                    _friendlyError(state.error!),
+                    style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+                    textAlign: TextAlign.center,
+                  ),
+                  if (state.lastFailedAnswer != null)
+                    TextButton.icon(
+                      onPressed: () =>
+                          ref.read(alienProvider.notifier).retry(),
+                      icon: const Icon(Icons.refresh,
+                          size: 15, color: AppTheme.neonGreen),
+                      label: const Text('다시 시도',
+                          style: TextStyle(
+                              color: AppTheme.neonGreen, fontSize: 13)),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 4),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    ),
+                ],
               ),
             ),
 

@@ -28,12 +28,14 @@ class AlienState {
   final List<ConversationTurn> turns;
   final bool isLoading;
   final String? error;
+  final String? lastFailedAnswer;
 
   const AlienState({
     this.compositeImage,
     this.turns = const [],
     this.isLoading = false,
     this.error,
+    this.lastFailedAnswer,
   });
 
   AlienState copyWith({
@@ -41,12 +43,14 @@ class AlienState {
     List<ConversationTurn>? turns,
     bool? isLoading,
     String? error,
+    String? lastFailedAnswer,
   }) =>
       AlienState(
         compositeImage: compositeImage ?? this.compositeImage,
         turns: turns ?? this.turns,
         isLoading: isLoading ?? this.isLoading,
         error: error,
+        lastFailedAnswer: lastFailedAnswer ?? this.lastFailedAnswer,
       );
 
   ConversationTurn? get currentTurn =>
@@ -156,12 +160,38 @@ class AlienNotifier extends StateNotifier<AlienState> {
         return;
       } catch (e) {
         if (attempt < _maxRetries - 1) {
-          await Future.delayed(const Duration(seconds: 1));
+          await Future.delayed(const Duration(seconds: 2));
         } else {
-          state = state.copyWith(isLoading: false, error: '응답 생성 실패: $e');
+          state = state.copyWith(
+            isLoading: false,
+            error: '응답 생성 실패: $e',
+            lastFailedAnswer: answer,
+          );
         }
       }
     }
+  }
+
+  Future<void> retry() async {
+    final answer = state.lastFailedAnswer;
+    if (answer == null) return;
+
+    final turns = List<ConversationTurn>.from(state.turns);
+    // 빈 AI 응답 턴 제거
+    if (turns.isNotEmpty && turns.last.aiQuestion.isEmpty && turns.last.userAnswer == null) {
+      turns.removeLast();
+    }
+    // userAnswer 초기화 (submitAnswer가 다시 추가)
+    if (turns.isNotEmpty) {
+      turns[turns.length - 1] = ConversationTurn(aiQuestion: turns.last.aiQuestion);
+    }
+
+    state = AlienState(
+      compositeImage: state.compositeImage,
+      turns: turns,
+    );
+
+    await submitAnswer(answer);
   }
 
   void updateCompositeImage(Uint8List bytes) {
