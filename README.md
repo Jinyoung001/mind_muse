@@ -8,7 +8,7 @@
 
 > "What if the best way to learn isn't being taught — but teaching a hopelessly confused alien?"
 
-MIND MUSE applies the **Feynman Technique** through an AI-driven alien character. Students upload a textbook image, mark areas of interest by drawing on it, and then watch as an alien investigator misinterprets everything completely wrong. To correct the alien, students must articulate their own understanding — and that's where real learning happens.
+MIND MUSE applies the **Feynman Technique** through an AI-driven alien character. Students upload any image — a textbook page, a diagram, a product label, a photo of anything around them — mark areas of interest by drawing on it, and then watch as an alien investigator misinterprets everything completely wrong. To correct the alien, students must articulate their own understanding — and that's where real learning happens.
 
 Built for the **Gemma 4 Good Hackathon** · Powered by `gemma-4-26b-a4b-it`
 
@@ -17,7 +17,7 @@ Built for the **Gemma 4 Good Hackathon** · Powered by `gemma-4-26b-a4b-it`
 ## How It Works
 
 ```
-📚 Upload textbook image
+📚 Upload any image (textbook, diagram, real-world photo — anything)
         ↓
 ✏️  Draw circles / underlines on key areas
         ↓
@@ -208,7 +208,7 @@ flutter build apk --debug
 ## User Flow
 
 1. **Home Screen**: Tap "탐사 시작" (Start Exploration)
-2. **Image Selection**: Choose a textbook photo from gallery or camera
+2. **Image Selection**: Choose any photo from gallery or camera — textbook, diagram, real-world object, anything you want to understand
 3. **Canvas Screen**: The image appears; draw circles or underlines on areas of interest
 4. **Ask Alien**: Tap the "탐사 질문하기" (Ask Alien) FAB — Gemma 4 receives the composite image
 5. **Alien Response**: The alien misinterprets the drawing with alien-science logic (streaming, typewriter animation)
@@ -228,7 +228,9 @@ Reverse tutoring (Feynman Technique): student must *explain* to a "confused lear
 
 **Design insight — turning a bug into a feature**: Every large language model hallucinates — it produces confident, plausible-sounding wrong answers. Most AI application design treats hallucination as a problem to suppress. MIND MUSE inverts the premise: the alien character is *designed* to hallucinate confidently, grounded in internally consistent alien-science logic. Since hallucination is inherent to LLMs, making it the pedagogical engine turns an unavoidable weakness into the mechanism that drives learning. A student correcting a confidently wrong alien is doing exactly what the Feynman Technique requires — and doing it because they *want* to, not because they were told to.
 
-MIND MUSE makes this pedagogical loop automatic and accessible — any student with an Android phone and a textbook can practice the Feynman Technique in minutes, with no tutor or study partner required.
+**Any subject. Any model size.** Because the learning mechanism lives entirely in the student's mind — not the AI's — this works for any subject the student can photograph. A biology diagram, a chemistry equation, a history map, a product label, or a photo of anything in the physical world: if you can draw a circle around it, the alien can misinterpret it. The same logic applies to model size: the AI doesn't need to be brilliant to facilitate learning — it needs to be consistently, engagingly *wrong*. The cognitive work is done by the student's act of explanation. The AI is just the confused listener.
+
+Educational research supports this: the *Protégé Effect* — the measurable learning boost that comes from expecting to teach someone else — shows that framing a task as teaching activates deeper processing, stronger memory encoding, and better long-term retention than passive study. These effects emerge from the student's internal process, independent of how capable the listener is. MIND MUSE makes this pedagogical loop automatic and accessible — any student with a smartphone can practice the Feynman Technique in minutes, on any subject, with no tutor or study partner required.
 
 ---
 
