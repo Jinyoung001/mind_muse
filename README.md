@@ -77,15 +77,6 @@ final stream = _model.generateContentStream(allContents);
 
 Gemma 4's vision capability means the alien responds to exactly what the student drew — circling the mitochondria on a biology diagram produces a different alien misinterpretation than circling the cell wall.
 
-### Why Gemma 4 Specifically
-
-During prototyping, the same alien persona prompt was tested against Gemma 2 2B and a quantized Mistral-7B variant. Both produced Korean output with consistent grammatical errors in formal speech levels (*존댓말*) and the persona collapsed after 3 turns — the model started refusing to stay in character and fell back to generic assistant responses. Gemma 4-26B maintained consistent *존댓말*, internally coherent alien-science reasoning, and stable persona adherence across all tested conversation lengths (up to 12 turns).
-
-Three properties made Gemma 4 the only viable choice:
-- **Multimodal input**: Gemma 4 processes the composite image AND the student's text simultaneously — text-only models cannot do this at all
-- **Korean formal speech**: The alien's dramatic emotional register requires reliable *존댓말* — Gemma 4 produces this consistently where smaller models did not
-- **Instruction adherence**: Maintaining a fictional persona across 5–10 turns without breaking character requires the instruction-following strength of the 26B model
-
 ### System Prompt Design
 
 The alien's behavior is shaped by a single system prompt. A key excerpt (Korean, matching the Korean-language output requirement):
