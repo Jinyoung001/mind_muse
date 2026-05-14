@@ -1,6 +1,6 @@
 # MIND MUSE — 외계인 조사관 👽
 
-🌐 **언어** · [English](README.md) · **한국어**
+🌐 **언어** · [English](README.md) · [**한국어**](README_ko.md)
 
 ---
 

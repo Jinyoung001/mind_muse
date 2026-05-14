@@ -1,6 +1,6 @@
 # MIND MUSE — Alien Inspector 👽
 
-🌐 **Language** · **English** · [한국어](README_ko.md)
+🌐 **Language** · [**English**](README.md) · [한국어](README_ko.md)
 
 ---
 
