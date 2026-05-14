@@ -226,6 +226,8 @@ Reverse tutoring (Feynman Technique): student must *explain* to a "confused lear
 - Surfaces gaps in understanding (metacognition)
 - Creates emotional engagement (correcting a confidently wrong alien is surprisingly motivating)
 
+**Design insight — turning a bug into a feature**: Every large language model hallucinates — it produces confident, plausible-sounding wrong answers. Most AI application design treats hallucination as a problem to suppress. MIND MUSE inverts the premise: the alien character is *designed* to hallucinate confidently, grounded in internally consistent alien-science logic. Since hallucination is inherent to LLMs, making it the pedagogical engine turns an unavoidable weakness into the mechanism that drives learning. A student correcting a confidently wrong alien is doing exactly what the Feynman Technique requires — and doing it because they *want* to, not because they were told to.
+
 MIND MUSE makes this pedagogical loop automatic and accessible — any student with an Android phone and a textbook can practice the Feynman Technique in minutes, with no tutor or study partner required.
 
 ---
