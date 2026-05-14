@@ -1,5 +1,9 @@
 # MIND MUSE — Alien Inspector 👽
 
+🌐 **Language** · **[English](README.md)** · [한국어](README_ko.md)
+
+---
+
 **Reverse Tutoring AI App powered by Gemma 4**
 
 > "What if the best way to learn isn't being taught — but teaching a hopelessly confused alien?"
