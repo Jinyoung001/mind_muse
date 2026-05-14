@@ -67,7 +67,7 @@ late final _model = GenerativeModel(
 
 // First turn: composite image + user message sent together
 allContents.add(Content('user', [
-  DataPart('image/png', imageBytes),   // textbook photo + drawing strokes as PNG
+  DataPart('image/png', imageBytes),   // any image + drawing strokes as PNG
   TextPart(message),
 ]));
 
@@ -221,9 +221,9 @@ Reverse tutoring (Feynman Technique): student must *explain* to a "confused lear
 
 **Any subject. Any model size.** Because the learning mechanism lives entirely in the student's mind — not the AI's — this works for any subject the student can photograph. A biology diagram, a chemistry equation, a history map, a product label, or a photo of anything in the physical world: if you can draw a circle around it, the alien can misinterpret it. The same logic applies to model size: the AI doesn't need to be brilliant to facilitate learning — it needs to be consistently, engagingly *wrong*. The cognitive work comes from the student's expectation of teaching and the act of explanation itself. The AI is just the confused listener.
 
-Educational research supports this: the *Protégé Effect* — the measurable learning boost that comes from expecting to teach someone else — shows that framing a task as teaching activates deeper processing, stronger memory encoding, and better long-term retention than passive study. Nestojko et al. (2014) identified a critical nuance: the effect is strongest when students **expect to teach *before* they study** — if the teaching expectation is assigned only *after* studying, the gains largely disappear. MIND MUSE builds this expectation into the design from the first tap: the moment a student draws on an image, they already know the alien will misinterpret it and they will need to explain. The teaching mindset activates before a single message is sent.
+Educational research supports this: the *Protégé Effect* — the measurable learning boost that comes from expecting to teach someone else — shows that framing a task as teaching activates deeper processing, stronger memory encoding, and better long-term retention than passive study. Nestojko et al. (2014) identified a critical nuance: the effect is driven by expectations set *before* study — participants who expected to teach prior to reading retained more and organized their knowledge better than those expecting only a test. MIND MUSE builds this expectation into the design from the first tap: the moment a student draws on an image, they already know the alien will misinterpret it and they will need to explain. The teaching mindset activates before a single message is sent.
 
-These effects are independent of listener capability — *Betty's Brain* studies show equivalent gains when students teach a virtual AI agent, confirming the mechanism lives in the student, not the listener. Independent research on AI-based Feynman bots (arXiv, 2025) found students using teach-the-AI approaches outperformed passive study groups on both learning outcomes and self-assessed confidence.
+These effects emerge primarily from the student's act of teaching — *Betty's Brain* (Leelawong & Biswas, 2008) showed meaningful learning gains when students taught a virtual AI agent, suggesting the core mechanism resides in the student rather than requiring a highly capable listener. A pilot study on AI-based Feynman bots (arXiv 2506.09055, 2025) found that students using teach-the-AI approaches outperformed a passive study group on both learning outcomes and self-assessed confidence.
 
 MIND MUSE makes this pedagogical loop automatic and accessible — any student with a smartphone can practice the Feynman Technique in minutes, on any subject, with no tutor or study partner required.
 
@@ -237,4 +237,4 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 **MIND MUSE** · Gemma 4 Good Hackathon · Created by Jinyoung
 
-*Every textbook becomes a conversation. Every confused alien is a learning opportunity.*
+*Every image becomes a conversation. Every confused alien is a learning opportunity.*
